@@ -1,0 +1,546 @@
+[
+  {
+    "type": "mcq_single",
+    "question": "Lola et Inès ___ (aller) à la Marche des Fiertés samedi dernier.",
+    "options": ["sont allé", "est allée", "étaient allées", "sont allées"],
+    "answer": [3],
+    "media": {"image": "images/pride_girlfriends1.png"}
+  },
+  {
+    "type": "mcq_single",
+    "question": "Samedi, Lola et Inès ___ (faire) la fête après la Marche des Fiertés.",
+    "options": ["a fait", "ont faites", "ont fait", "ont fais"],
+    "answer": [2],
+    "media": { "image": "images/pride_party.png" }
+  },
+  {
+    "type": "fill_blanks_dropdown",
+    "question": "Demain, elles ___ (aller) acheter des drapeaux arc-en-ciel.",
+    "sentence_parts": ["Demain, elles ", " acheter des drapeaux arc-en-ciel."],
+    "options_for_blanks": [[" ", "vas", "allez", "vont à", "vont"]],
+    "answers": ["vont"],
+    "media": {"image": "images/rainbow_flags.png"}
+  },
+  {
+    "type": "fill_blanks_dropdown",
+    "question": "Demain, elles ___ (aller) retrouver leurs amis devant la mairie.",
+    "sentence_parts": ["Demain, elles ", " retrouver leurs amis devant la mairie."],
+    "options_for_blanks": [[" ", "va", "allez", "vont"]],
+    "answers": ["vont"]
+  },
+  {
+    "type": "mcq_single",
+    "question": "Pour la parade, elles ___ (prendre) plein de paillettes et des baskets colorées.",
+    "options": ["prenez", "prennent", "prend", "prenons"],
+    "answer": [1],
+    "media": {"image": "images/glitter.png"}
+  },
+  {
+    "type": "mcq_single",
+    "question": "Chaque année, Lola ___ (venir) à la Pride avec ses ami.e.s.",
+    "options": ["venez", "vient", "viens", "viennent"],
+    "answer": [1],
+    "media": { "image": "images/rainbow_friends.png" }
+  },
+  {
+    "type": "fill_blanks_dropdown",
+    "question": "Plus tard, Inès promet : \"Je ___ (venir) à toutes les Marches des Fiertés avec toi !\"",
+    "sentence_parts": ["Plus tard, Inès promet : \"Je ", " à toutes les Marches des Fiertés avec toi !\""],
+    "options_for_blanks": [[" ", "viendrai", "viens", "viendrais"]],
+    "answers": ["viendrai"]
+  },
+  {
+    "type": "fill_blanks_dropdown",
+    "question": "Un jour, Inès promet : « Nous ___ (voyager) dans toutes les villes pour les Prides ! »",
+    "sentence_parts": ["Un jour, Inès promet : « Nous ", " dans toutes les villes pour les Prides ! »"],
+    "options_for_blanks": [[" ", "voyagerons", "voyageons", "voyagera"]],
+    "answers": ["voyagerons"]
+  },
+  {
+    "type": "fill_blanks_dropdown",
+    "question": "Quand Lola ___ (être) ado, elle ___ (aimer) déjà se déguiser pour la Pride.",
+    "sentence_parts": ["Quand Lola ", " ado, elle ", " déjà se déguiser pour la Pride."],
+    "options_for_blanks": [[" ", "serait", "était", "est"], [" ", "aime", "aimait", "aimaient"]],
+    "answers": ["était", "aimait"]
+  },
+  {
+    "type": "fill_blanks_dropdown",
+    "question": "Quand Lola ___ (être) petite, elle ___ (vouloir) déjà un drapeau arc-en-ciel.",
+    "sentence_parts": ["Quand Lola ", " petite, elle ", " déjà un drapeau arc-en-ciel."],
+    "options_for_blanks": [[" ", "était", "serait", "est"], [" ", "voulais", "voulait", "voudrait"]],
+    "answers": ["était", "voulait"]
+  },
+  {
+    "type": "fill_blanks_dropdown",
+    "question": "Ce soir, Lola va inviter ses amies à une soirée Pride. Elles ___ (préparer) des cupcakes arc-en-ciel !",
+    "sentence_parts": ["Ce soir, Lola va inviter ses amies à une soirée Pride. Elles ", " des cupcakes arc-en-ciel !"],
+    "options_for_blanks": [[" ", "va préparer", "vont préparer", "allez préparer"]],
+    "answers": ["vont préparer"],
+    "media": { "image": "images/cupcake_party.png" }
+  },
+  {
+    "type": "fill_blanks_dropdown",
+    "question": "À la Pride, Lola a un drapeau de 2 mètres. Inès a un drapeau d’1,5 mètre. Le drapeau de Lola est ___ grand que celui d’Inès.",
+    "sentence_parts": [
+      "À la Pride, Lola a un drapeau de 2 mètres. Inès a un drapeau d’1,5 mètre. Le drapeau de Lola est ", " grand que celui d’Inès."
+    ],
+    "options_for_blanks": [[" ", "plus", "aussi", "moins"]],
+    "answers": ["plus"],
+    "media": { "image": "images/pride_flag.png" }
+  },
+  {
+    "type": "fill_blanks_dropdown",
+    "question": "Lola et Inès participent à la Pride. Lola a six stickers sur sa robe, Inès en a seulement trois. Lola a ___ de stickers qu’Inès.",
+    "sentence_parts": [
+      "Lola et Inès participent à la Pride. Lola a six stickers sur sa robe, Inès en a seulement trois. Lola a ", " de stickers qu’Inès."
+    ],
+    "options_for_blanks": [[" ", "autant", "plus", "moins"]],
+    "answers": ["plus"],
+    "media": { "image": "images/pride_party.png" }
+  },
+  {
+    "type": "mcq_single",
+    "question": "Lors du concours de danse de la Pride, Lola a gagné le 1er prix, Inès le 3e. Qui a dansé le mieux selon leurs amis ?",
+    "options": [
+      "Lola danse mieux qu’Inès.",
+      "Inès danse mieux que Lola.",
+      "Lola et Inès dansent aussi bien l’une que l’autre."
+    ],
+    "answer": [0],
+    "media": { "image": "images/dancing_friends.png" }
+  },
+  {
+    "type": "fill_blanks_dropdown",
+    "question": "Pendant le pique-nique de la Pride, Lola avait deux parts de gâteau; l’an dernier elle n’en avait qu’une. Cette année, Lola a eu ___ de gâteau que l’an dernier.",
+    "sentence_parts": [
+      "Pendant le pique-nique de la Pride, Lola avait deux parts de gâteau; l’an dernier elle n’en avait qu’une. Cette année, Lola a eu ", " de gâteau que l’an dernier."
+    ],
+    "options_for_blanks": [[" ", "plus", "autant", "moins"]],
+    "answers": ["plus"]
+  },
+  {
+    "type": "fill_blanks_dropdown",
+    "question": "Lola porte une robe arc-en-ciel très colorée. Inès porte une robe bleue un peu plus discrète. La robe de Lola est ___ colorée que celle d’Inès.",
+    "sentence_parts": [
+      "Lola porte une robe arc-en-ciel très colorée. Inès porte une robe bleue un peu plus discrète. La robe de Lola est ", " colorée que celle d’Inès."
+    ],
+    "options_for_blanks": [[" ", "aussi", "plus", "moins"]],
+    "answers": ["plus"],
+    "media": { "image": "images/pride_outfit.png" }
+  },
+  {
+    "type": "fill_blanks_dropdown",
+    "question": "Lola et Inès choisissent leur snack pour la parade. Lola prend une glace, Inès aussi. Elles ont mangé ___ de glace l’une que l’autre.",
+    "sentence_parts": [
+      "Lola et Inès choisissent leur snack pour la parade. Lola prend une glace, Inès aussi. Elles ont mangé ", " de glace l’une que l’autre."
+    ],
+    "options_for_blanks": [[" ", "autant", "plus", "moins"]],
+    "answers": ["autant"]
+  },
+  {
+    "type": "fill_blanks_dropdown",
+    "question": "Inès a collé cinq stickers sur ses bras, Lola seulement deux sur sa joue. Inès a ___ de stickers que Lola.",
+    "sentence_parts": [
+      "Inès a collé cinq stickers sur ses bras, Lola seulement deux sur sa joue. Inès a ", " de stickers que Lola."
+    ],
+    "options_for_blanks": [[" ", "autant", "plus", "moins"]],
+    "answers": ["plus"]
+  },
+  {
+    "type": "mcq_single",
+    "question": "Qui chantait le plus fort pendant la parade ? On entendait un groupe d’amis chanter bien plus que les autres.",
+    "options": [
+      "Le groupe d’amis",
+      "Inès",
+      "Lola",
+      "Le DJ"
+    ],
+    "answer": [0],
+    "media": { "image": "images/friends_singing.png" }
+  },
+  {
+    "type": "order_phrase",
+    "question": "Remets cette courte conversation dans l’ordre :",
+    "phrase_shuffled": [
+      "— Prête pour la Pride ?",
+      "— Oui ! J’ai acheté un nouveau t-shirt arc-en-ciel.",
+      "— Trop stylé, il te va super bien !"
+    ],
+    "answer": [
+      "— Prête pour la Pride ?",
+      "— Oui ! J’ai acheté un nouveau t-shirt arc-en-ciel.",
+      "— Trop stylé, il te va super bien !"
+    ],
+    "media": { "image": "images/rainbow_shirt.png" }
+  },
+  {
+    "type": "match_sentence",
+    "question": "Associe chaque image à la bonne phrase :",
+    "pairs": [
+      {"sentence": "Deux amies dansant avec des drapeaux", "image_path": "images/pride_dance.png"},
+      {"sentence": "Gâteau arc-en-ciel", "image_path": "images/rainbow_cake.png"},
+      {"sentence": "Selfie de groupe à la parade", "image_path": "images/pride_selfie.png"}
+    ],
+    "answer": {
+      "images/pride_dance.png": "Deux amies dansant avec des drapeaux",
+      "images/rainbow_cake.png": "Gâteau arc-en-ciel",
+      "images/pride_selfie.png": "Selfie de groupe à la parade"
+    }
+  },
+  {
+    "type": "fill_blanks_dropdown",
+    "question": "Lola gagne un badge de la Marche des Fiertés ! Inès en a deux. Qui en a le plus ?",
+    "sentence_parts": ["Lola a ", " badges, Inès en a ", ". Inès a", "de badges que Lola."],
+    "options_for_blanks": [
+      [" ", "un", "deux"],
+      [" ", "deux", "un"],
+      [" ", "plus", "moins", "autant"]
+    ],
+    "answers": ["un", "deux", "plus"]
+  },
+  {
+    "type": "mcq_single",
+    "question": "Lola tient un drapeau de 2 mètres, Inès un drapeau d’1,5 mètre. Le drapeau de Lola est...",
+    "options": ["plus grand que celui d’Inès", "plus petit que celui d’Inès", "aussi grand que celui d’Inès"],
+    "answer": [0]
+  },
+  {
+    "type": "mcq_single",
+    "question": "Lola porte une robe arc-en-ciel, Inès une robe bleue pâle. La robe d’Inès est...",
+    "options": ["moins colorée que celle de Lola", "plus colorée que celle de Lola", "aussi colorée que celle de Lola"],
+    "answer": [0]
+  },
+  {
+    "type": "mcq_single",
+    "question": "Le DJ et un groupe d’amies chantent sur la scène de la Pride. Le groupe chante très fort. Le DJ...",
+    "options": ["chante moins fort que le groupe d’amies", "chante aussi fort que le groupe d’amies", "chante plus fort que le groupe d’amies"],
+    "answer": [0]
+  },
+  {
+    "type": "word_fill",
+    "question": "Complète la phrase par le bon verbe irrégulier au présent : Inès et Lola ___ (faire) la fête toutes les années à la Pride.",
+    "sentence_parts": ["Inès et Lola ", " la fête toutes les années à la Pride."],
+    "answers": ["font"]
+  },
+  {
+    "type": "image_tagging",
+    "question": "Glisse chaque étiquette sur la bonne personne :",
+    "media": {"image": "images/pride_people_tag.png"},
+    "tags": [
+      { "label": "Lola", "id": "lola" },
+      { "label": "Inès", "id": "ines" },
+      { "label": "Le DJ", "id": "dj" },
+      { "label": "Le couple", "id": "couple" }
+    ],
+    "answer": {
+      "lola": [129.0, 979.0],
+      "ines": [404.0, 966.0],
+      "dj": [787.0, 958.0],
+      "couple": [1134.0, 949.0]
+    }
+  },
+  {
+    "type": "categorization_multiple",
+    "question": "À la Pride, mets chaque accessoire dans la bonne catégorie :",
+    "stimuli": [
+      { "text": "Un drapeau arc-en-ciel", "image": "images/pride_flag.png" },
+      { "text": "Des gâteaux", "image": "images/rainbow_cake.png" },
+      { "text": "Des paillettes", "image": "images/glitter.png" }
+    ],
+    "categories": ["À porter", "À manger"],
+    "answer": {
+      "Des paillettes": "À porter",
+      "Un drapeau arc-en-ciel": "À porter",
+      "Des gâteaux": "À manger"
+    }
+  },
+  {
+    "type": "order_phrase",
+    "question": "Remets en ordre la préparation d’Inès pour la Parade :",
+    "phrase_shuffled": [
+      "– Elle colle son autocollant Pride sur la joue.",
+      "– Elle retrouve Lola devant la scène.",
+      "– Elle prend la ligne 1 du métro.",
+      "– Elle met son t-shirt à paillettes."
+    ],
+    "answer": [
+      "– Elle met son t-shirt à paillettes.",
+      "– Elle colle son autocollant Pride sur la joue.",
+      "– Elle prend la ligne 1 du métro.",
+      "– Elle retrouve Lola devant la scène."
+    ],
+    "media": { "image": "images/prep_parade.png" }
+  },
+  {
+    "type": "mcq_single",
+    "question": "Pendant la parade, qui prend le plus de photos ?",
+    "options": [
+      "Le couple d'ami.e.s",
+      "Le DJ",
+      "Inès",
+      "Lola"
+    ],
+    "answer": [3],
+    "media": { "image": "images/photos_lola.png" }
+  },
+  {
+    "type": "categorization_multiple",
+    "question": "Lola raconte différents souvenirs de Pride. Classe chaque souvenir dans la période la plus probable de la vie, selon le contexte :",
+    "stimuli": [
+      { "text": "Au lycée, elle danse sur le char avec ses ami·e·s.", "image": null },
+      { "text": "Comme adulte, elle vient à la Pride avec sa copine.", "image": null },
+      { "text": "À 8 ans, elle fait son premier drapeau rainbow.", "image": null },
+      { "text": "Petite, elle reçoit un gâteau arc-en-ciel.", "image": null }
+    ],
+    "categories": ["Enfant", "Adulte", "Adolescent·e"],
+    "answer": {
+      "À 8 ans, elle fait son premier drapeau rainbow.": "Enfant",
+      "Comme adulte, elle vient à la Pride avec sa copine.": "Adulte",
+      "Au lycée, elle danse sur le char avec ses ami·e·s.": "Adolescent·e",
+      "Petite, elle reçoit un gâteau arc-en-ciel.": "Enfant"
+    }
+  },
+  {
+    "type": "fill_blanks_dropdown",
+    "question": "Demain, Lola et Inès ___ (aller) voir le feu d’artifice. Elles ___ (préparer) des sandwichs ce soir.",
+    "sentence_parts": [
+      "Demain, Lola et Inès ", " voir le feu d’artifice. Elles ", " des sandwichs ce soir."
+    ],
+    "options_for_blanks": [
+      [" ", "préparent", "va", "vont", "allez"],
+      [" ", "préparons", "préparez", "préparent"]
+    ],
+    "answers": ["vont", "préparent"]
+  },
+  {
+    "type": "match_sentence",
+    "question": "Associe l’image à la bonne légende :",
+    "pairs": [
+      { "sentence": "Lola distribue des stickers.", "image_path": "images/lola_give_sticker.png"},
+      { "sentence": "Inès porte un drapeau.", "image_path": "images/ines_pink_flag.png"},
+      { "sentence": "Le DJ anime la parade.", "image_path": "images/dj_parade.png"}
+    ],
+    "answer": {
+      "images/lola_give_sticker.png": "Lola distribue des stickers.",
+      "images/ines_pink_flag.png": "Inès porte un drapeau.",
+      "images/dj_parade.png": "Le DJ anime la parade."
+    }
+  },
+  {
+    "type": "fill_blanks_dropdown",
+    "question": "À la tombola, Lola ___ (gagner) le t-shirt le plus coloré. Inès ___ (recevoir) un bracelet arc-en-ciel.",
+    "sentence_parts": [
+      "À la tombola, Lola ", " le t-shirt le plus coloré. Inès ", " un bracelet arc-en-ciel."
+    ],
+    "options_for_blanks": [
+      [" ", "a gagné", "aimes", "gagnez"],
+      [" ", "a reçu", "reçus", "reçois"]
+    ],
+    "answers": ["a gagné", "a reçu"]
+  },
+  {
+    "type": "mcq_single",
+    "question": "Le drapeau d’Inès est aussi grand que celui de Lola. Que signifie cette phrase ?",
+    "options": ["Un drapeau est plus grand.", "Ils sont identiques.", "Un drapeau est plus petit."],
+    "answer": [1]
+  },
+  {
+    "type": "mcq_single",
+    "question": "La robe de Lola est plus colorée que celle d’Inès. Que peut-on en déduire ?",
+    "options": ["La robe d’Inès est aussi colorée.", "La robe de Lola est multicolore.", "La robe d’Inès est blanche."],
+    "answer": [1]
+  },
+  {
+    "type": "fill_blanks_dropdown",
+    "question": "Après la fête, Lola ___ (vouloir) rentrer chez elle, mais Inès ___ (dire) : « Restons un peu plus ! »",
+    "sentence_parts": ["Après la fête, Lola ", " rentrer chez elle, mais Inès ", " : « Restons un peu plus ! »"],
+    "options_for_blanks": [
+      [" ", "veut", "veux", "voudrait"],
+      [" ", "dis", "dit", "dire"]
+    ],
+    "answers": ["veut", "dit"]
+  },
+  {
+    "type": "word_fill",
+    "question": "Écris la phrase au passé composé : Inès (acheter) un drapeau, Lola (mettre) son t-shirt arc-en-ciel, elles (partir) tôt pour la parade.",
+    "sentence_parts": [
+      "Inès ", " un drapeau, Lola ", " son t-shirt arc-en-ciel, elles ", " tôt pour la parade."
+    ],
+    "answers": [
+      "a acheté",
+      "a mis",
+      "sont parties"
+    ]
+  },
+  {
+    "type": "fill_blanks_dropdown",
+    "question": "Il y a deux ans, Lola ___ (oser) défiler main dans la main avec Inès ; maintenant, elle le fait chaque année.",
+    "sentence_parts": [
+      "Il y a deux ans, Lola ", " défiler main dans la main avec Inès ; maintenant, elle le fait chaque année."
+    ],
+    "options_for_blanks": [
+      [" ", "a osé", "osait", "ose"]
+    ],
+    "answers": ["a osé"]
+  },
+  {
+    "type": "fill_blanks_dropdown",
+    "question": "Lola et Inès racontent leur journée à la Pride : « Dès le matin, nous ___ (se lever) tôt et nous ___ (préparer) des sandwichs arc-en-ciel. Lola ___ (oublier) son drapeau, alors elle ___ (prendre) celui d’Inès. »",
+    "sentence_parts": [
+      "Dès le matin, nous ", " tôt et nous ", " des sandwichs arc-en-ciel. \nLola ", " son drapeau, alors elle ", " celui d’Inès."
+    ],
+    "options_for_blanks": [
+      [" ", "nous nous sommes levées", "nous sommes levées", "nous sommes levés"],
+      [" ", "avons préparé", "préparons", "avions préparé"],
+      [" ", "a oublié", "a oublié de", "oublie"],
+      [" ", "a pris", "prend", "prenait"]
+    ],
+    "answers": [
+      "nous nous sommes levées",
+      "avons préparé",
+      "a oublié",
+      "a pris"
+    ]
+  },
+  {
+    "type": "word_fill",
+    "question": "Lis ce passage et complète avec le bon verbe : « Pendant la parade, Inès (chanter) très fort tandis que Lola (prendre) des photos. Après, elles (rentrer) chez elles en chantant encore. »",
+    "sentence_parts": [
+      "Pendant la parade, Inès ", " très fort tandis que Lola ", " des photos. \nAprès, elles ", " chez elles en chantant encore."
+    ],
+    "answers": [
+      "a chanté",
+      "a pris",
+      "sont rentrées"
+    ]
+  },
+  {
+    "type": "fill_blanks_dropdown",
+    "question": "Lola et Inès comparent leur journée : « Cette année, Lola a eu ___(=) de badges qu’Inès. Les deux ont crié ___(=) fort l’une que l’autre. Inès avait ___(+) stickers sur sa robe que Lola, mais Lola avait ___(-) de paillettes. »",
+    "sentence_parts": [
+      "Cette année, Lola a eu ", " badges qu’Inès. \nLes deux ont crié ", " fort l’une que l’autre. \nInès avait ", " stickers sur sa robe que Lola, mais Inès avait ", " de paillettes."
+    ],
+    "options_for_blanks": [
+      [" ", "autant de", "plus de", "moins de"],
+      [" ", "aussi", "autant", "moins", "plus"],
+      [" ", "plus de", "autant de", "moins de"],
+      [" ", "moins", "autant", "plus"]
+    ],
+    "answers": [
+      "autant de",
+      "aussi",
+      "plus de",
+      "moins"
+    ]
+  },
+  {
+    "type": "fill_blanks_dropdown",
+    "question": "Dans le métro après la Pride, Lola dit : « Je crois que nous avons fait ___ (+) de rencontres cette année que l’an dernier ! » Inès répond : « Oui, mais j’ai reçu ___ (-) stickers que toi. »",
+    "sentence_parts": [
+      "Je crois que nous avons fait ", " de rencontres cette année que l’an dernier ! » \nInès répond : « Oui, mais j’ai reçu ", " stickers que toi."
+    ],
+    "options_for_blanks": [
+      [" ", "plus de", "plus", "plus que", "autant de", "moins de"],
+      [" ", "moins de", "autant de", "plus de", "moins", "plus"]
+    ],
+    "answers": [
+      "plus de",
+      "moins de"
+    ]
+  },
+  {
+    "type": "fill_blanks_dropdown",
+    "question": "À la fin de la journée, Lola et Inès comparent tout ce qu’elles ont vécu. Complète avec le mot juste :\n- Lola a porté ___ rubans qu’Inès (=).\n- Inès a eu ___ photos sur son téléphone que Lola (-).\n- Toutes les deux ont dansé ___ longtemps l’une que l’autre (=).\n- Lola a mangé ___ bonbons qu’Inès (+).",
+    "sentence_parts": [
+      "Lola a porté ", " rubans qu’Inès. \nInès a eu ", " photos sur son téléphone que Lola. \nToutes les deux ont dansé ", " longtemps l’une que l’autre. \nLola a mangé ", " bonbons qu’Inès."
+    ],
+    "options_for_blanks": [
+      [" ", "plus de", "autant de", "moins de"],
+      [" ", "moins de", "autant de", "plus de"],
+      [" ", "aussi", "plus", "autant", "moins"],
+      [" ", "moins de", "plus de", "autant de"]
+    ],
+    "answers": [
+      "autant de",
+      "moins de",
+      "aussi",
+      "plus de"
+    ]
+  },
+  {
+    "type": "fill_blanks_dropdown",
+    "question": "À la parade, elles observent les autres groupes. Lola remarque : « Regarde, le drapeau de ce groupe est ___(+) grand que le nôtre. Mais nos tenues sont ___(+) colorées que celles de tout le monde ! » Inès répond : « Oui, et il y a ___(+) de monde cette année ! »",
+    "sentence_parts": [
+      "Regarde, le drapeau de ce groupe est ", " grand que le nôtre.\nMais nos tenues sont ", " colorées que celles de tout le monde ! »\nInès répond : « Oui, et il y a ", " de monde cette année ! »"
+    ],
+    "options_for_blanks": [
+      [" ", "plus", "moins", "autant"],
+      [" ", "plus", "moins", "aussi"],
+      [" ", "plus", "autant", "moins"]
+    ],
+    "answers": [
+      "plus",
+      "plus",
+      "plus"
+    ],
+    "media": { "image": "images/rainbow_flags.png" }
+  },
+  {
+    "type": "fill_blanks_dropdown",
+    "question": "Dans l’après-midi, elles jouent à comparer leurs souvenirs : « Cette année, on a pris ___(+) de photos que l’an dernier, mais on a mangé ___(-) de bonbons. Quant aux rencontres, j’en ai fait ___(+) que toi ! » Inès rit : « Peut-être, mais j’ai crié ___(+) fort pendant le concert ! »",
+    "sentence_parts": [
+      "on a pris ", " de photos que l’an dernier, \nmais on a mangé ", " de bonbons. \nQuant aux rencontres, j’en ai fait ", " que toi ! » \nInès rit : « Peut-être, mais j’ai crié ", " fort pendant le concert ! »"
+    ],
+    "options_for_blanks": [
+      [" ", "plus", "moins", "autant"],
+      [" ", "moins de", "plus de", "autant de"],
+      [" ", "plus", "autant", "moins"],
+      [" ", "plus", "moins", "autant", "aussi"]
+    ],
+    "answers": [
+      "plus",
+      "moins de",
+      "plus",
+      "plus"
+    ],
+    "media": { "image": "images/photos_lola.png" }
+  },
+  {
+    "type": "fill_blanks_dropdown",
+    "question": "En fin de journée, elles racontent : « C’était génial ! Nous avons toutes les deux distribué ___ stickers (=), mais Lola a reçu ___ compliments (-) qu’Inès. Pourtant, c’est Inès qui a dansé ___ longtemps à la scène principale (+). Pour moi, il n’y a rien de ___ (+) amusant que cette journée ! »",
+    "sentence_parts": [
+      "Nous avons toutes les deux distribué ", " stickers, mais Lola a reçu ", " compliments qu’Inès. \nPourtant, c’est Inès qui a dansé ", " longtemps à la scène principale. \nPour moi, il n’y a rien de ", " amusant que cette journée !"
+    ],
+    "options_for_blanks": [
+      [" ", "plus de", "autant de", "moins de"],
+      [" ", "moins de", "plus de", "autant de"],
+      [" ", "plus", "autant", "mois"],
+      [" ", "plus", "aussi", "moins"]
+    ],
+    "answers": [
+      "autant de",
+      "moins de",
+      "plus",
+      "plus"
+    ],
+    "media": { "image": "images/lola_give_sticker.png" }
+  },
+  {
+    "type": "fill_blanks_dropdown",
+    "question": "Le lendemain de la Pride, elles discutent : « J’ai dormi ___ (-) heures que toi ! » dit Inès. Lola répond : « C’est normal, tu as dansé ___ (+) longtemps que moi. Mais cette année, on a eu ___ (+) d’anecdotes que jamais auparavant ! »",
+    "sentence_parts": [
+      "J’ai dormi ", " heures que toi ! » dit Inès. \nLola répond : « C’est normal, tu as dansé ", " longtemps que moi. \nMais cette année, on a eu ", " d’anecdotes que jamais auparavant ! »"
+    ],
+    "options_for_blanks": [
+      [" ", "plus de", "autant de", "moins de"],
+      [" ", "moins", "plus", "autant"],
+      [" ", "plus", "moins", "autant"]
+    ],
+    "answers": [
+      "moins de",
+      "plus",
+      "plus"
+    ],
+    "media": { "image": "images/pride_girlfriends1.png" }
+  }
+]
