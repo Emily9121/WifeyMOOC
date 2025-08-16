@@ -256,7 +256,8 @@ void MediaHandler::embedVideoPlayer(const QString &videoPath, QWidget *parent, i
     scene->addItem(videoItem);
     videoItem->setSize(QSizeF(width, height));
     graphicsView->setScene(scene);
-    graphicsView->setMinimumSize(1280, 720);
+    graphicsView->setMinimumSize(width, height);
+    graphicsView->resize(width, height);
     graphicsView->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
     // Set up new video output connection
