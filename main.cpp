@@ -43,6 +43,9 @@ int main(int argc, char *argv[])
 
     // Process command line arguments
     parser.process(app);
+
+    MediaHandler::s_videoWidth = parser.value(videoWidthOption).toInt();
+    MediaHandler::s_videoHeight = parser.value(videoHeightOption).toInt();
     
     QString questionFile = parser.value(questionFileOption);
     QString progressFile = parser.value(progressFileOption);
