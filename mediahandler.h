@@ -68,8 +68,7 @@ private:
 
     QMediaPlayer *m_mediaPlayer;
     QAudioOutput *m_audioOutput;
-    QVideoWidget *m_videoWidget;
-
+    QWidget *m_videoWidget;
     QString m_currentAudioPath;
     QString m_currentVideoPath;
     QString m_baseMediaDir;

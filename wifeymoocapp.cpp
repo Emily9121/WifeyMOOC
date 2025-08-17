@@ -31,7 +31,16 @@ WifeyMOOCApp::WifeyMOOCApp(const QString &questionFile,
     , m_questionsLoaded(false)
     , m_enableSkipButton(DEBUG)
 {
-    setWindowTitle("WifeyMOOC 1.0 for Linux");
+    #ifdef Q_OS_LINUX
+    setWindowTitle("WifeyMOOC 1.0.3 for Linux");
+    #elif defined(Q_OS_WINDOWS)
+        setWindowTitle("WifeyMOOC 1.0.3 for Windows");
+    #elif defined(Q_OS_MACOS)
+        setWindowTitle("WifeyMOOC 1.0.3 for macOS");
+    #else
+        setWindowTitle("WifeyMOOC 1.0.3 on Unsupported OS");
+    #endif
+
     setMinimumSize(1000, 700);
     
     setupUI();

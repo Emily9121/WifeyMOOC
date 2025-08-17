@@ -25,6 +25,8 @@ set(HEADERS
 )
 
 qt_add_executable(WifeyMOOC ${SOURCES} ${HEADERS})
+set_target_properties(WifeyMOOC PROPERTIES MACOSX_BUNDLE TRUE)
+install(TARGETS WifeyMOOC BUNDLE DESTINATION .)
 qt_add_resources(WifeyMOOC "resources.qrc")
 
 target_link_libraries(

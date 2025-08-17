@@ -292,7 +292,7 @@ void ImageTaggingWidget::dropEvent(QDropEvent *event)
         QString tagId = QString::fromUtf8(data);
         
         if (m_tags.contains(tagId)) {
-            QPoint dropPos = event->pos();
+            QPoint dropPos = event->position().toPoint();
             m_tags[tagId]->setPosition(dropPos);
             emit tagPositionChanged(tagId, dropPos);
         }
