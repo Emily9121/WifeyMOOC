@@ -1,4 +1,4 @@
-# WifeyMOOC 1.0.2
+# WifeyMOOC 1.0.3
 
 App used for language learning, due to how it came to exist, no maintenance is promised even for massive bugs, don't complain to me if it kill your guinea pig or something.
 
