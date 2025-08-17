@@ -10,7 +10,8 @@
 int main(int argc, char *argv[])
 {
     QApplication::setWindowIcon(QIcon(":/icons/wifeymooc.png"));
-    QCoreApplication::setAttribute(Qt::AA_UseSoftwareOpenGL);
+    // Uncomment to disable GPU video acceleration:
+    // QCoreApplication::setAttribute(Qt::AA_UseSoftwareOpenGL);
     QApplication app(argc, argv);
     
     // Set application properties
