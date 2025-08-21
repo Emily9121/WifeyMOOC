@@ -11,4 +11,5 @@ everything is licencied into  DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE , incl
 Changelog:
 
 1.0.3 - Fix bug with seekbar in MacOS, Add image scaling support
+
 1.0.4 - So what happened is that none of my files tried to use list_pick or sequence_audio, and being this was done by AI, of course the clanker was lazy and none of those question type actually worked... this is now fixed and they work as expected!
