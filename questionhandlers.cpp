@@ -219,21 +219,46 @@ QWidget* QuestionHandlers::createWordFill(const QJsonObject &question, QWidget *
 
 // ---------- LIST PICK ----------
 QWidget* QuestionHandlers::createListPick(const QJsonObject &question, QWidget *parent) {
-    QVBoxLayout *layout = qobject_cast<QVBoxLayout*>(parent->layout());
-    if (!layout) layout = new QVBoxLayout(parent);
+    QVBoxLayout *layout = qobject_cast<QVBoxLayout *>(parent->layout());
+    if (!layout) {
+        layout = new QVBoxLayout(parent);
+        parent->setLayout(layout);
+    }
 
     m_listPickWidget = new QListWidget(parent);
-    QJsonArray items = question["items"].toArray();
+    m_listPickWidget->setSelectionMode(QAbstractItemView::MultiSelection);
+
+    QJsonArray items;
+    if (question.contains("options"))
+        items = question["options"].toArray();
+    else if (question.contains("items"))
+        items = question["items"].toArray();
+
     for (const QJsonValue &val : items) {
-        m_listPickWidget->addItem(val.toString());
+        QString text;
+        if (val.isString()) {
+            text = val.toString();
+        } else if (val.isObject()) {
+            QJsonObject obj = val.toObject();
+            if (obj.contains("text")) {
+                text = obj["text"].toString();
+            } else if (obj.contains("image")) {
+                text = QFileInfo(obj["image"].toString()).fileName();
+            }
+        }
+        if (!text.isEmpty()) {
+            m_listPickWidget->addItem(text);
+        }
     }
+
     layout->addWidget(m_listPickWidget);
 
-    connect(m_listPickWidget, &QListWidget::itemSelectionChanged,
-            this, &QuestionHandlers::answerChanged);
+    connect(m_listPickWidget, &QListWidget::itemSelectionChanged, this, &QuestionHandlers::answerChanged);
 
     return parent;
 }
+
+
 
 // ---------- MATCH SENTENCE ----------
 QWidget* QuestionHandlers::createMatchSentence(const QJsonObject &question, QWidget *parent) {
@@ -370,25 +395,55 @@ QWidget* QuestionHandlers::createSequenceAudio(const QJsonObject &question, QWid
     QVBoxLayout *vl = qobject_cast<QVBoxLayout*>(parent->layout());
     if (!vl) vl = new QVBoxLayout(parent);
 
-    QJsonArray audioClips = question["clips"].toArray();
+    // Use "audio_options" instead of "clips" to match Python JSON key
+    QJsonArray audioOptions = question["audio_options"].toArray();
+
     m_sequenceSpinBoxes.clear();
 
-    for (int i = 0; i < audioClips.size(); ++i) {
+    for (int i = 0; i < audioOptions.size(); ++i) {
         QHBoxLayout *hl = new QHBoxLayout;
+
+        QString optionText;
+        if (audioOptions[i].isObject()) {
+            QJsonObject obj = audioOptions[i].toObject();
+            optionText = obj.contains("option") ? obj["option"].toString() : QString("Option %1").arg(i + 1);
+        } else {
+            optionText = audioOptions[i].toString();
+        }
+
         QPushButton *playBtn = new QPushButton(QString("Play %1").arg(i + 1), parent);
-        connect(playBtn, &QPushButton::clicked, this, [=]() {
-            if (m_mediaHandler)
-                m_mediaHandler->playAudio(resolveImagePath(audioClips[i].toString()));
+        playBtn->setToolTip(optionText);
+
+        // Connect button to play the corresponding audio option text (if you want to extend it to actual audio play)
+        connect(playBtn, &QPushButton::clicked, this, [this, i, audioOptions]() {
+            if (m_mediaHandler) {
+                // Example placeholder: may adapt to play specific audio clips if available by index
+                QString soundName;
+                if (audioOptions[i].isObject()) {
+                    QJsonObject obj = audioOptions[i].toObject();
+                    soundName = obj["option"].toString();
+                } else {
+                    soundName = audioOptions[i].toString();
+                }
+                // For now, just logging or implement actual playing later
+                qDebug() << "Play audio option:" << soundName;
+            }
         });
+
+        // Spin box for ordering input
         QSpinBox *order = new QSpinBox(parent);
-        order->setRange(1, audioClips.size());
+        order->setRange(1, audioOptions.size());
+        order->setToolTip(QString("Set order for %1").arg(optionText));
+
         m_sequenceSpinBoxes.append(order);
+
+        // Add button with label and spinbox side by side
         hl->addWidget(playBtn);
         hl->addWidget(order);
+
         vl->addLayout(hl);
 
-        connect(order, qOverload<int>(&QSpinBox::valueChanged),
-                this, &QuestionHandlers::answerChanged);
+        connect(order, qOverload<int>(&QSpinBox::valueChanged), this, &QuestionHandlers::answerChanged);
     }
 
     return parent;
@@ -742,42 +797,39 @@ QuestionResult QuestionHandlers::checkWordFill(const QJsonObject &question) {
 }
 
 
+// Check List Pick for multiple selections
 QuestionResult QuestionHandlers::checkListPick(const QJsonObject &question) {
     QuestionResult result;
-    QString selectedKey;
 
-    QJsonArray items = question["items"].toArray();
-    int currentIndex = m_listPickWidget ? m_listPickWidget->currentRow() : -1;
-
-    if (currentIndex >= 0 && currentIndex < items.size()) {
-        QJsonValue val = items[currentIndex];
-        if (val.isObject()) {
-            QJsonObject obj = val.toObject();
-            if (obj.contains("image") && obj["image"].isString() && !obj["image"].toString().isEmpty()) {
-                QString pathKey = obj["image"].toString();
-                QString fileKey = QFileInfo(pathKey).fileName();
-                // choose how to store, preserving both for lookup
-                selectedKey = pathKey + "|" + fileKey;
-            } else if (obj.contains("text")) {
-                selectedKey = obj["text"].toString();
-            }
-        } else if (val.isString()) {
-            selectedKey = val.toString();
-        }
+    if (!m_listPickWidget) {
+        result.isCorrect = false;
+        result.message = "List widget not initialized.";
+        return result;
     }
 
-    // Get correct answer and prep to try both forms
-    QString correct = question["correct"].toString();
-    QString correctFile = QFileInfo(correct).fileName();
+    QList<QListWidgetItem *> selectedItems = m_listPickWidget->selectedItems();
+    if (selectedItems.isEmpty()) {
+        result.isCorrect = false;
+        result.message = "Please select at least one option.";
+        return result;
+    }
 
-    // Accept as correct if either form matches
-    bool isRight = (selectedKey == correct) || (selectedKey.contains("|" + correct + "|")) ||
-                   (selectedKey.contains("|" + correct)) || (selectedKey.startsWith(correct + "|")) ||
-                   (selectedKey == correctFile) || (selectedKey.contains("|" + correctFile)) ||
-                   (selectedKey.startsWith(correctFile + "|"));
+    QSet<int> selectedIndices;
+    for (QListWidgetItem *item : selectedItems)
+        selectedIndices.insert(m_listPickWidget->row(item));
 
-    result.userAnswer = selectedKey;
-    result.isCorrect = isRight;
+    QSet<int> correctIndices;
+    QJsonArray correctArray = question["answer"].toArray();
+    for (const QJsonValue &val : correctArray)
+        correctIndices.insert(val.toInt());
+
+    result.isCorrect = (selectedIndices == correctIndices);
+
+    QVariantList userSelection;
+    for (int idx : selectedIndices)
+        userSelection.append(idx);
+    result.userAnswer = userSelection;
+
     if (!result.isCorrect)
         result.message = "Incorrect selection.";
 
@@ -884,22 +936,53 @@ QuestionResult QuestionHandlers::checkCategorizationMultiple(const QJsonObject &
 
 QuestionResult QuestionHandlers::checkSequenceAudio(const QJsonObject &question) {
     QuestionResult r;
-    QJsonArray correct = question["correct_order"].toArray();
-    bool all = true;
+    // Grab the correct answer (zero-based from JSON)
+    QJsonArray correct = question.contains("answer")
+        ? question["answer"].toArray()
+        : (question.contains("correct_order") ? question["correct_order"].toArray() : QJsonArray());
+
+    bool allComplete = true;
+    bool allInRange = true;
+    bool allCorrect = true;
     QVariantList ans;
 
+    // For each spinbox (user entry)
     for (int i = 0; i < m_sequenceSpinBoxes.size(); ++i) {
-        int val = m_sequenceSpinBoxes[i]->value();
-        ans.append(val);
-        if (i < correct.size() && val != correct[i].toInt())
-            all = false;
+        int val = m_sequenceSpinBoxes[i]->value();    // user types 1-based (1,2,3,4)
+        if (val == 0) {
+            allComplete = false;
+        }
+        int zeroBasedVal = val - 1;                  // shift to 0-based for comparison
+        ans.append(zeroBasedVal);
+        // Check if input is in range of possible indices
+        if (zeroBasedVal < 0 || zeroBasedVal >= correct.size()) {
+            allInRange = false;
+        }
+        // Compare to JSON answer
+        if (i < correct.size() && zeroBasedVal != correct[i].toInt()) {
+            allCorrect = false;
+        }
     }
 
     r.userAnswer = ans;
-    r.isCorrect = all;
-    if (!all) r.message = "Incorrect sequence.";
+    if (!allComplete) {
+        r.isCorrect = false;
+        r.message = "Please complete the sequence with numbers.";
+        return r;
+    }
+    if (!allInRange) {
+        r.isCorrect = false;
+        r.message = "Invalid numbers entered in sequence.";
+        return r;
+    }
+    r.isCorrect = allCorrect;
+    if (!allCorrect) {
+        r.message = "Incorrect sequence.";
+    }
     return r;
 }
+
+
 
 QuestionResult QuestionHandlers::checkOrderPhrase(const QJsonObject &question) {
     QuestionResult r;
