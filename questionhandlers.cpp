@@ -4,6 +4,7 @@
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
+#include <QGridLayout>
 #include <QLabel>
 #include <QRadioButton>
 #include <QButtonGroup>
@@ -16,6 +17,8 @@
 #include <QPixmap>
 #include <QFileInfo>
 #include <QDir>
+#include <QToolButton>
+#include <QIcon>
 #include <QDebug>
 
 #define DEBUG_IMAGE_TAGGING 1
@@ -38,13 +41,14 @@ void QuestionHandlers::clearCurrentQuestion() {
     m_currentQuestion = QJsonObject();
     m_currentQuestionType.clear();
 
+    m_buttonGroups.clear();
     m_mcqButtonGroup = nullptr;
     m_mcqCheckBoxes.clear();
     m_wordFillEntries.clear();
     m_listPickWidget = nullptr;
     m_matchComboBoxes.clear();
     m_categorizationCombo = nullptr;
-    m_multipleCategorizationCombos.clear();
+    m_multipleCategorizationCombosMap.clear(); // Corrected variable name!
     m_sequenceSpinBoxes.clear();
     m_orderPhraseWords.clear();
     m_orderPhraseLabels.clear();
@@ -54,24 +58,30 @@ void QuestionHandlers::clearCurrentQuestion() {
     m_dropTags.clear();
     m_imageLabel = nullptr;
     m_imageTaggingAlternatives = QJsonArray();
+    m_multipleCategorizationCombosMap.clear();
 }
 
 QWidget* QuestionHandlers::createQuestionWidget(const QJsonObject &question,
     QWidget *parent,
     const QString &mediaDir,
     MediaHandler *mediaHandler,
-    int imageTaggingAltIndex) // <-- ADD THIS ARG
+    int imageTaggingAltIndex,
+    const QString &questionKey)
 {
-    clearCurrentQuestion();
+    // The original clear was too aggressive for multi-question! We only clear for top-level questions.
+    if (!questionKey.contains('-')) {
+        clearCurrentQuestion();
+    }
     m_currentQuestion = question;
     m_currentQuestionWidget = parent;
     m_mediaDir = mediaDir;
     m_mediaHandler = mediaHandler;
     m_currentQuestionType = question["type"].toString();
-    m_imageTaggingAltIndex = imageTaggingAltIndex; // CRITICAL LINE!
+    m_imageTaggingAltIndex = imageTaggingAltIndex;
+    m_currentQuestionKey = questionKey;
 
     if (question.contains("media"))
-        addMediaButtons(question["media"].toObject(), parent);
+        mediaHandler->addMediaButtons(question["media"].toObject(), parent, mediaDir);
 
     if (m_currentQuestionType == "mcq_single") return createMcqSingle(question, parent);
     if (m_currentQuestionType == "mcq_multiple") return createMcqMultiple(question, parent);
@@ -92,47 +102,80 @@ QWidget* QuestionHandlers::createQuestionWidget(const QJsonObject &question,
     return parent;
 }
 
-// ---------- MCQ SINGLE ----------
 QWidget* QuestionHandlers::createMcqSingle(const QJsonObject &question, QWidget *parent) {
     QVBoxLayout *layout = qobject_cast<QVBoxLayout*>(parent->layout());
     if (!layout) layout = new QVBoxLayout(parent);
 
-    QJsonArray opts = question.contains("options") ? question["options"].toArray()
-                     : (question.contains("answers") ? question["answers"].toArray() : QJsonArray());
-
-    m_mcqButtonGroup = new QButtonGroup(parent);
-    m_mcqButtonGroup->setExclusive(true);
+    QJsonArray opts = question["options"].toArray();
+    QButtonGroup* buttonGroup = new QButtonGroup(parent);
+    buttonGroup->setExclusive(true);
 
     for (int i = 0; i < opts.size(); ++i) {
-        QRadioButton *rb = new QRadioButton(opts[i].toString(), parent);
-        m_mcqButtonGroup->addButton(rb, i);
-        layout->addWidget(rb);
-    }
-    connect(m_mcqButtonGroup, &QButtonGroup::buttonClicked, this, &QuestionHandlers::answerChanged);
+        QJsonValue optionVal = opts[i];
+        QAbstractButton* button;
 
+        if(optionVal.isObject()) {
+            QJsonObject optionObj = optionVal.toObject();
+            QToolButton* toolButton = new QToolButton(parent);
+            QString imgPath = resolveImagePath(optionObj["image"].toString());
+            toolButton->setIcon(QIcon(imgPath));
+            toolButton->setIconSize(QSize(128, 128));
+            toolButton->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
+            toolButton->setText(optionObj["text"].toString());
+            button = toolButton;
+        } else {
+            button = new QRadioButton(optionVal.toString(), parent);
+        }
+        button->setCheckable(true);
+        buttonGroup->addButton(button, i);
+        layout->addWidget(button);
+    }
+    
+    m_buttonGroups[m_currentQuestionKey] = buttonGroup;
+    m_mcqButtonGroup = buttonGroup;
+    
+    connect(buttonGroup, &QButtonGroup::buttonClicked, this, &QuestionHandlers::answerChanged);
     return parent;
 }
 
-// ---------- MCQ MULTIPLE ----------
 QWidget* QuestionHandlers::createMcqMultiple(const QJsonObject &question, QWidget *parent) {
     QVBoxLayout *layout = qobject_cast<QVBoxLayout*>(parent->layout());
     if (!layout) layout = new QVBoxLayout(parent);
 
-    QJsonArray opts = question.contains("options") ? question["options"].toArray()
-                     : (question.contains("answers") ? question["answers"].toArray() : QJsonArray());
+    QJsonArray opts = question["options"].toArray();
+    
+    QButtonGroup* buttonGroup = new QButtonGroup(parent);
+    buttonGroup->setExclusive(false);
 
     m_mcqCheckBoxes.clear();
-    for (const auto &a : opts) {
-        QCheckBox *cb = new QCheckBox(a.toString(), parent);
-        connect(cb, &QCheckBox::checkStateChanged, this, &QuestionHandlers::answerChanged);
-        layout->addWidget(cb);
-        m_mcqCheckBoxes.append(cb);   // <-- Make sure you append each checkbox here to this list
+    for (int i=0; i < opts.size(); ++i) {
+        QJsonValue optionVal = opts[i];
+        QAbstractButton* button;
+        
+        if(optionVal.isObject()) {
+            QJsonObject optionObj = optionVal.toObject();
+            QToolButton* toolButton = new QToolButton(parent);
+            QString imgPath = resolveImagePath(optionObj["image"].toString());
+            toolButton->setIcon(QIcon(imgPath));
+            toolButton->setIconSize(QSize(128, 128));
+            toolButton->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
+            toolButton->setText(optionObj["text"].toString());
+            button = toolButton;
+        } else {
+            QCheckBox* cb = new QCheckBox(optionVal.toString(), parent);
+            m_mcqCheckBoxes.append(cb);
+            button = cb;
+        }
+        
+        button->setCheckable(true);
+        buttonGroup->addButton(button, i);
+        layout->addWidget(button);
+        connect(button, &QAbstractButton::clicked, this, &QuestionHandlers::answerChanged);
     }
-
+    m_buttonGroups[m_currentQuestionKey] = buttonGroup;
     return parent;
 }
 
-// ---------- WORD FILL ----------
 QWidget* QuestionHandlers::createWordFill(const QJsonObject &question, QWidget *parent) {
     QVBoxLayout *vl = qobject_cast<QVBoxLayout*>(parent->layout());
     if (!vl) vl = new QVBoxLayout(parent);
@@ -204,7 +247,7 @@ QWidget* QuestionHandlers::createWordFill(const QJsonObject &question, QWidget *
     }
 
     // Tail text after last blank
-    if (!parts.isEmpty()) {
+    if (!parts.isEmpty() && (int)parts.size() > nBlanks) {
         QStringList lines = parts.last().toString().split('\n');
         for (const QString &line : lines) {
             QLabel *lbl = new QLabel(line, parent);
@@ -344,7 +387,7 @@ QWidget* QuestionHandlers::createCategorizationMultiple(const QJsonObject &quest
     }
 
     QJsonArray cats = question["categories"].toArray();
-    m_multipleCategorizationCombos.clear();
+    QList<QComboBox*> combos;
     int maxCols = question.contains("max_columns") ? question["max_columns"].toInt() : 6;
 
     for (int i = 0; i < entries.size(); ++i) {
@@ -375,7 +418,7 @@ QWidget* QuestionHandlers::createCategorizationMultiple(const QJsonObject &quest
         QComboBox *cb = new QComboBox(gridContainer);
         for (const QJsonValue &c : cats)
             cb->addItem(c.toString());
-        m_multipleCategorizationCombos.append(cb);
+        combos.append(cb);
         cellLayout->addWidget(cb);
 
         connect(cb, qOverload<int>(&QComboBox::currentIndexChanged), this, &QuestionHandlers::answerChanged);
@@ -385,6 +428,7 @@ QWidget* QuestionHandlers::createCategorizationMultiple(const QJsonObject &quest
         grid->addWidget(cellWidget, i / maxCols, i % maxCols);
     }
 
+    m_multipleCategorizationCombosMap[m_currentQuestionKey] = combos;
     vl->addWidget(gridContainer);
     return parent;
 }
@@ -395,7 +439,6 @@ QWidget* QuestionHandlers::createSequenceAudio(const QJsonObject &question, QWid
     QVBoxLayout *vl = qobject_cast<QVBoxLayout*>(parent->layout());
     if (!vl) vl = new QVBoxLayout(parent);
 
-    // Use "audio_options" instead of "clips" to match Python JSON key
     QJsonArray audioOptions = question["audio_options"].toArray();
 
     m_sequenceSpinBoxes.clear();
@@ -414,10 +457,8 @@ QWidget* QuestionHandlers::createSequenceAudio(const QJsonObject &question, QWid
         QPushButton *playBtn = new QPushButton(QString("Play %1").arg(i + 1), parent);
         playBtn->setToolTip(optionText);
 
-        // Connect button to play the corresponding audio option text (if you want to extend it to actual audio play)
         connect(playBtn, &QPushButton::clicked, this, [this, i, audioOptions]() {
             if (m_mediaHandler) {
-                // Example placeholder: may adapt to play specific audio clips if available by index
                 QString soundName;
                 if (audioOptions[i].isObject()) {
                     QJsonObject obj = audioOptions[i].toObject();
@@ -425,19 +466,16 @@ QWidget* QuestionHandlers::createSequenceAudio(const QJsonObject &question, QWid
                 } else {
                     soundName = audioOptions[i].toString();
                 }
-                // For now, just logging or implement actual playing later
                 qDebug() << "Play audio option:" << soundName;
             }
         });
 
-        // Spin box for ordering input
         QSpinBox *order = new QSpinBox(parent);
         order->setRange(1, audioOptions.size());
         order->setToolTip(QString("Set order for %1").arg(optionText));
 
         m_sequenceSpinBoxes.append(order);
 
-        // Add button with label and spinbox side by side
         hl->addWidget(playBtn);
         hl->addWidget(order);
 
@@ -510,19 +548,15 @@ QWidget* QuestionHandlers::createFillBlanksDropdown(const QJsonObject &question,
     QJsonArray blanks = question["options_for_blanks"].toArray();
     int nBlanks = blanks.size();
 
-    // Following Python approach: alternate text / dropdown / text...
     QHBoxLayout *row = new QHBoxLayout;
     auto newRow = [&]() {
         if (row->count() > 0) vl->addLayout(row);
         row = new QHBoxLayout;
     };
 
-    // Python builds: parts[i], then dropdown for blank[i], repeat...
     for (int i = 0; i < nBlanks; ++i) {
-        // 1. Preceding text
         if (i < parts.size()) {
-            QString txt = parts[i].toString();
-            QStringList lines = txt.split('\n');
+            QStringList lines = parts[i].toString().split('\n');
             for (int li = 0; li < lines.size(); ++li) {
                 if (li > 0) newRow();
                 if (!lines[li].isEmpty()) {
@@ -533,7 +567,6 @@ QWidget* QuestionHandlers::createFillBlanksDropdown(const QJsonObject &question,
             }
         }
 
-        // 2. Dropdown for this blank
         QComboBox *cb = new QComboBox(parent);
         if (i < blanks.size()) {
             for (const QJsonValue &opt : blanks[i].toArray())
@@ -544,10 +577,8 @@ QWidget* QuestionHandlers::createFillBlanksDropdown(const QJsonObject &question,
         connect(cb, qOverload<int>(&QComboBox::currentIndexChanged), this, &QuestionHandlers::answerChanged);
     }
 
-    // After the blanks, append the tail text (parts[-1] in Python)
-    if (!parts.isEmpty()) {
-        QString txt = parts.last().toString();
-        QStringList lines = txt.split('\n');
+    if (!parts.isEmpty() && parts.size() > nBlanks) {
+        QStringList lines = parts.last().toString().split('\n');
         for (int li = 0; li < lines.size(); ++li) {
             if (li > 0) newRow();
             if (!lines[li].isEmpty()) {
@@ -576,11 +607,9 @@ QWidget* QuestionHandlers::createMatchPhrases(const QJsonObject &question, QWidg
         QJsonObject pair = pairs[i].toObject();
         QHBoxLayout *hl = new QHBoxLayout;
 
-        // Left side: source text
         QLabel *lbl = new QLabel(pair["source"].toString(), parent);
         hl->addWidget(lbl);
 
-        // Right side: combo with targets
         QComboBox *cb = new QComboBox(parent);
         for (const QJsonValue &t : pair["targets"].toArray())
             cb->addItem(t.toString());
@@ -596,12 +625,9 @@ QWidget* QuestionHandlers::createMatchPhrases(const QJsonObject &question, QWidg
 
 // ---------- IMAGE TAGGING ----------
 QWidget* QuestionHandlers::createImageTagging(const QJsonObject &question, QWidget *parent) {
-    // Create/ensure vertical layout
     QVBoxLayout *vl = qobject_cast<QVBoxLayout*>(parent->layout());
     if (!vl) vl = new QVBoxLayout(parent);
 
-    // --- 1. Select the current alt (main or alternative)
-    // If alternatives exist, choose by index; else use main question.
     int altIdx = m_imageTaggingAltIndex;
     QJsonObject altQ = question;
     if (question.contains("alternatives")) {
@@ -610,8 +636,6 @@ QWidget* QuestionHandlers::createImageTagging(const QJsonObject &question, QWidg
             altQ = alternatives[altIdx-1].toObject();
         }
     }
-
-    // --- 2. Get image path for this alternative
     QString imgPath;
     if (altQ.contains("media") && altQ["media"].toObject().contains("image")) {
         imgPath = resolveImagePath(altQ["media"].toObject()["image"].toString());
@@ -619,8 +643,6 @@ QWidget* QuestionHandlers::createImageTagging(const QJsonObject &question, QWidg
         imgPath = resolveImagePath(altQ["image"].toString());
     }
 
-    // --- 3. Build the image tagging widget
-    // Remove old if any
     if (m_imageTaggingWidget) {
         m_imageTaggingWidget->deleteLater();
         m_imageTaggingWidget = nullptr;
@@ -629,13 +651,11 @@ QWidget* QuestionHandlers::createImageTagging(const QJsonObject &question, QWidg
     m_imageTaggingWidget->setBackgroundImage(imgPath);
     vl->addWidget(m_imageTaggingWidget);
 
-    // --- 4. Add all tags for this alt (from JSON)
     QJsonArray tagsA = altQ.contains("tags") ? altQ["tags"].toArray() : question["tags"].toArray();
     for (int i = 0; i < tagsA.size(); ++i) {
         QJsonObject tag = tagsA[i].toObject();
         QString tagId = tag["id"].toString();
         QString label = tag["label"].toString();
-        // Position logic, load if we have previously dragged or else default
         QPoint startPos(10, 10 + i * 40);
         if (m_tagPositions.contains(QString::number(altIdx))) {
             QVariantMap altMap = m_tagPositions[QString::number(altIdx)].toMap();
@@ -644,7 +664,6 @@ QWidget* QuestionHandlers::createImageTagging(const QJsonObject &question, QWidg
         }
         m_imageTaggingWidget->addTag(tagId, label, startPos);
 
-        // Track movements
         connect(m_imageTaggingWidget, &ImageTaggingWidget::tagPositionChanged,
                 this, [this, altIdx](const QString &tId, const QPoint &pos) {
             QVariantMap altMap = m_tagPositions[QString::number(altIdx)].toMap();
@@ -653,8 +672,6 @@ QWidget* QuestionHandlers::createImageTagging(const QJsonObject &question, QWidg
         });
     }
 
-    // Button labels logic (leave to parent, but you MUST set alternative count for the controller)
-    // This sets up how many alternatives there are so the main app shows the button.
     if (question.contains("alternatives")) {
         m_imageTaggingAlternatives = question["alternatives"].toArray();
     } else {
@@ -664,104 +681,102 @@ QWidget* QuestionHandlers::createImageTagging(const QJsonObject &question, QWidg
     return parent;
 }
 
-
-
-// ========== IMAGE TAGGING ALT HANDLERS ==========
 int QuestionHandlers::getImageTaggingAlternativeCount() const {
-    return m_imageTaggingAlternatives.size() > 0 ? m_imageTaggingAlternatives.size() : 1;
+    return m_imageTaggingAlternatives.size() > 0 ? m_imageTaggingAlternatives.size() + 1 : 1;
 }
 
 void QuestionHandlers::setImageTaggingAlternative(int altIndex)
 {
-    if (altIndex < 0 || altIndex >= getImageTaggingAlternativeCount())
-        return;
     m_imageTaggingAltIndex = altIndex;
-
-    if (!m_imageTaggingWidget || !m_imageLabel)
-        return;
-
-    // Determine alt object and image
-    QJsonObject altObj = m_imageTaggingAlternatives.size() > 0 ?
-        m_imageTaggingAlternatives[altIndex].toObject() : m_currentQuestion;
-
-    QString imgPath;
-    if (altObj.contains("image"))
-        imgPath = resolveImagePath(altObj["image"].toString());
-    else if (altObj.contains("media") && altObj["media"].toObject().contains("image"))
-        imgPath = resolveImagePath(altObj["media"].toObject()["image"].toString());
-
-    m_imageLabel->setPixmap(QPixmap(imgPath));
-    m_imageTaggingWidget->setBackgroundImage(imgPath);
-
-    // Build tags for this alternative
-    m_imageTaggingWidget->clearTags();
-    QJsonArray tags = altObj.contains("tags") ? altObj["tags"].toArray() : m_currentQuestion["tags"].toArray();
-
-    for (int i = 0; i < tags.size(); ++i) {
-        QJsonObject tagObj = tags[i].toObject();
-        QString tagId = tagObj["id"].toString();
-        QString label = tagObj["label"].toString();
-        QPoint startPos(10, 10 + i * 40);
-        // Restore user position if already exists for this alt/tag:
-        if (m_tagPositions.contains(QString::number(altIndex))) {
-            QVariantMap altMap = m_tagPositions[QString::number(altIndex)].toMap();
-            if (altMap.contains(tagId))
-                startPos = altMap[tagId].toPoint();
-        }
-        m_imageTaggingWidget->addTag(tagId, label, startPos);
-
-        connect(m_imageTaggingWidget, &ImageTaggingWidget::tagPositionChanged,
-                this, [this, altIndex](const QString &tId, const QPoint &pos) {
-            QVariantMap altMap = m_tagPositions[QString::number(altIndex)].toMap();
-            altMap[tId] = pos;
-            m_tagPositions[QString::number(altIndex)] = altMap;
-        });
-    }
-
-    emit imageTaggingAlternativeChanged(altIndex);
 }
 
+QVariantMap QuestionHandlers::getTagPositions() const {
+    return m_tagPositions;
+}
 
-// ================= CHECK FUNCTIONS (start) =================
+void QuestionHandlers::setTagPositions(const QVariantMap &positions) {
+    m_tagPositions = positions;
+}
+
+QString QuestionHandlers::resolveImagePath(const QString &path) const {
+    if (QFileInfo(path).isAbsolute()) return path;
+    return QDir(m_mediaDir).absoluteFilePath(path);
+}
+
+QuestionResult QuestionHandlers::checkAnswer(const QJsonObject& questionBlock, int blockIndex)
+{
+    QString type = questionBlock.value("type").toString();
+    
+    if (type == "multi_questions") {
+        QuestionResult finalResult;
+        finalResult.isCorrect = true;
+        QJsonArray innerQuestions = questionBlock["questions"].toArray();
+        for(int i = 0; i < innerQuestions.size(); ++i) {
+            QJsonObject q = innerQuestions[i].toObject();
+            QString qKey = QString("%1-%2").arg(blockIndex).arg(i);
+            
+            QuestionResult innerResult = checkAnswerDispatcher(q, qKey);
+            if(!innerResult.isCorrect) {
+                finalResult.isCorrect = false;
+                finalResult.message = innerResult.message;
+                break; 
+            }
+        }
+        return finalResult;
+    } else {
+        QString qKey = QString::number(blockIndex);
+        return checkAnswerDispatcher(questionBlock, qKey);
+    }
+}
+
+QuestionResult QuestionHandlers::checkAnswerDispatcher(const QJsonObject& question, const QString& key)
+{
+    m_currentQuestion = question;
+    m_currentQuestionType = question["type"].toString();
+    m_currentQuestionKey = key;
+    return checkAnswer(question);
+}
+
 QuestionResult QuestionHandlers::checkMcqSingle(const QJsonObject &question) {
     QuestionResult r;
-    if (!m_mcqButtonGroup) return r;
-    int id = m_mcqButtonGroup->checkedId();
-    if (id < 0) {
+    QButtonGroup* group = m_buttonGroups.value(m_currentQuestionKey, m_mcqButtonGroup);
+    if (!group) {
+        r.message = "Button group not found.";
+        return r;
+    }
+    if (group->checkedId() < 0) {
         r.message = "Please select an answer.";
         return r;
     }
-
+    QJsonArray correctArr = question["answer"].toArray();
     QSet<int> correct;
-    QJsonArray correctArr = question.contains("correct_answers") ? question["correct_answers"].toArray()
-                           : (question.contains("answer") ? question["answer"].toArray()
-                           : (question.contains("answers") ? question["answers"].toArray() : QJsonArray()));
     for (auto v : correctArr) correct.insert(v.toInt());
-
-    r.isCorrect = correct.contains(id);
-    r.userAnswer = id;
+    r.isCorrect = correct.contains(group->checkedId());
+    r.userAnswer = group->checkedId();
     if (!r.isCorrect) r.message = "Incorrect.";
     return r;
 }
 
 QuestionResult QuestionHandlers::checkMcqMultiple(const QJsonObject &question) {
     QuestionResult r;
-    QSet<int> correct;
-    QJsonArray correctArr = question.contains("correct_answers") ? question["correct_answers"].toArray()
-                           : (question.contains("answer") ? question["answer"].toArray()
-                           : (question.contains("answers") ? question["answers"].toArray() : QJsonArray()));
-    for (auto v : correctArr) correct.insert(v.toInt());
-
-    QSet<int> selected;
-    for (int i = 0; i < m_mcqCheckBoxes.size(); ++i)
-        if (m_mcqCheckBoxes[i]->isChecked()) selected.insert(i);
-
-    qDebug() << "[Debug] Correct answers indices:" << correct;
-    qDebug() << "[Debug] Selected answers indices:" << selected;
-
-    r.isCorrect = (selected == correct);
+    QJsonArray correctAnswers = question["answer"].toArray();
+    QSet<int> correctIndices;
+    for(const auto& ans : correctAnswers) correctIndices.insert(ans.toInt());
+    QSet<int> selectedIndices;
+    if (m_buttonGroups.contains(m_currentQuestionKey)) {
+        QButtonGroup* group = m_buttonGroups.value(m_currentQuestionKey);
+        for(QAbstractButton* btn : group->buttons()) {
+            if(btn->isChecked()) {
+                selectedIndices.insert(group->id(btn));
+            }
+        }
+    } else {
+        for (int i = 0; i < m_mcqCheckBoxes.size(); ++i)
+            if (m_mcqCheckBoxes[i]->isChecked()) selectedIndices.insert(i);
+    }
+    r.isCorrect = (selectedIndices == correctIndices);
     QVariantList sel;
-    for (int s : selected) sel.append(s);
+    for (int s : selectedIndices) sel.append(s);
     r.userAnswer = sel;
     if (!r.isCorrect) r.message = "Incorrect selection.";
     return r;
@@ -771,112 +786,70 @@ QuestionResult QuestionHandlers::checkWordFill(const QJsonObject &question) {
     QuestionResult r;
     bool allCorrect = true;
     QVariantList userAnswers;
-
-    QJsonArray correctAnswers = question.contains("answers")
-        ? question["answers"].toArray()
-        : (question.contains("correct_answers") ? question["correct_answers"].toArray() : QJsonArray());
-
+    QJsonArray correctAnswers = question["answers"].toArray();
     for (int i = 0; i < m_wordFillEntries.size(); ++i) {
         QString entered = m_wordFillEntries[i]->text().trimmed();
         userAnswers.append(entered);
-
         if (i < correctAnswers.size()) {
-            QString correct = correctAnswers[i].toString().trimmed();
-            if (entered.compare(correct, Qt::CaseInsensitive) != 0) {
+            if (entered.compare(correctAnswers[i].toString().trimmed(), Qt::CaseInsensitive) != 0) {
                 allCorrect = false;
             }
         } else {
             allCorrect = false;
         }
     }
-
     r.userAnswer = userAnswers;
     r.isCorrect = allCorrect;
     if (!allCorrect) r.message = "Some answers are incorrect.";
     return r;
 }
 
-
-// Check List Pick for multiple selections
 QuestionResult QuestionHandlers::checkListPick(const QJsonObject &question) {
     QuestionResult result;
-
     if (!m_listPickWidget) {
-        result.isCorrect = false;
         result.message = "List widget not initialized.";
         return result;
     }
-
     QList<QListWidgetItem *> selectedItems = m_listPickWidget->selectedItems();
     if (selectedItems.isEmpty()) {
-        result.isCorrect = false;
         result.message = "Please select at least one option.";
         return result;
     }
-
     QSet<int> selectedIndices;
     for (QListWidgetItem *item : selectedItems)
         selectedIndices.insert(m_listPickWidget->row(item));
-
     QSet<int> correctIndices;
     QJsonArray correctArray = question["answer"].toArray();
     for (const QJsonValue &val : correctArray)
         correctIndices.insert(val.toInt());
-
     result.isCorrect = (selectedIndices == correctIndices);
-
     QVariantList userSelection;
     for (int idx : selectedIndices)
         userSelection.append(idx);
     result.userAnswer = userSelection;
-
-    if (!result.isCorrect)
-        result.message = "Incorrect selection.";
-
+    if (!result.isCorrect) result.message = "Incorrect selection.";
     return result;
 }
-
 
 QuestionResult QuestionHandlers::checkMatchSentence(const QJsonObject &question) {
     QuestionResult result;
     bool allCorrect = true;
     QVariantMap userAnswers;
-
     QJsonObject correctMap = question["answer"].toObject();
     QJsonArray pairs = question["pairs"].toArray();
-
     for (int i = 0; i < pairs.size(); ++i) {
         QJsonObject pair = pairs[i].toObject();
         QString selected = m_matchComboBoxes[i] ? m_matchComboBoxes[i]->currentText() : "";
-        userAnswers[QString::number(i)] = selected;
-
         QString key;
-
-        if (pair.contains("image_path") && pair["image_path"].isString() && !pair["image_path"].toString().isEmpty()) {
-            QString pathKey = pair["image_path"].toString();
-            QString fileKey = QFileInfo(pathKey).fileName();
-            if (correctMap.contains(pathKey)) {
-                key = pathKey;
-            } else if (correctMap.contains(fileKey)) {
-                key = fileKey;
-            } else {
-                key = pathKey; // fallback for error messages
-            }
-        } else if (pair.contains("left")) {
-            key = pair["left"].toString();
-        } else if (pair.contains("sentence")) {
-            key = pair["sentence"].toString();
-        }
-
-        QString correct = correctMap.value(key).toString();
-        if (selected != correct)
+        if (pair.contains("image_path")) key = pair["image_path"].toString();
+        else if (pair.contains("sentence")) key = pair["sentence"].toString();
+        userAnswers[key] = selected;
+        if (selected != correctMap.value(key).toString())
             allCorrect = false;
     }
-
     result.userAnswer = userAnswers;
     result.isCorrect = allCorrect;
-    if (!allCorrect)
-        result.message = "Incorrect matching.";
+    if (!allCorrect) result.message = "Incorrect matching.";
     return result;
 }
 
@@ -891,106 +864,68 @@ QuestionResult QuestionHandlers::checkCategorization(const QJsonObject &question
 
 QuestionResult QuestionHandlers::checkCategorizationMultiple(const QJsonObject &question) {
     QuestionResult r;
+    // ✨ Here's the magic! We get the RIGHT combo boxes using our key! ✨
+    if (!m_multipleCategorizationCombosMap.contains(m_currentQuestionKey)) {
+        r.message = "Could not find widgets to check answer.";
+        return r;
+    }
+    QList<QComboBox*> combosToCheck = m_multipleCategorizationCombosMap.value(m_currentQuestionKey);
     bool all = true;
     QVariantMap answers;
-
-    QJsonArray items;
-    if (question.contains("items"))
-        items = question["items"].toArray();
-    else if (question.contains("stimuli"))
-        items = question["stimuli"].toArray();
-
+    QJsonArray items = question["stimuli"].toArray();
     QJsonObject correctMap = question["answer"].toObject();
-
-    for (int i = 0; i < m_multipleCategorizationCombos.size(); ++i) {
-        QString sel = m_multipleCategorizationCombos[i]->currentText();
+    for (int i = 0; i < combosToCheck.size(); ++i) {
+        QString sel = combosToCheck[i]->currentText();
         QString key;
+        QJsonObject stim = items[i].toObject();
 
-        if (items[i].isObject()) {
-            QJsonObject stim = items[i].toObject();
-
-            if (stim.contains("text") && stim["text"].isString() && !stim["text"].toString().isEmpty()) {
-                key = stim["text"].toString();
-            }
-            else if (stim.contains("image") && stim["image"].isString() && !stim["image"].toString().isEmpty()) {
-                // Strip directory, keep filename only
-                key = QFileInfo(stim["image"].toString()).fileName();
-            }
-        }
-        else if (items[i].isString()) {
-            key = items[i].toString();
+        // ✨ Here is our new, genius logic! ✨
+        // It will use the text if it exists, otherwise it will use the image filename!
+        if (stim.contains("text") && stim["text"].isString() && !stim["text"].toString().isEmpty()) {
+            key = stim["text"].toString();
+        } else if (stim.contains("image") && stim["image"].isString() && !stim["image"].toString().isEmpty()) {
+            key = QFileInfo(stim["image"].toString()).fileName();
         }
 
         answers[key] = sel;
 
-        if (!correctMap.contains(key) || sel != correctMap.value(key).toString())
+        if (key.isEmpty() || !correctMap.contains(key) || sel != correctMap.value(key).toString())
             all = false;
     }
-
     r.userAnswer = answers;
     r.isCorrect = all;
-    if (!all)
-        r.message = "One or more incorrect.";
+    if (!all) r.message = "One or more incorrect.";
     return r;
 }
 
 QuestionResult QuestionHandlers::checkSequenceAudio(const QJsonObject &question) {
     QuestionResult r;
-    // Grab the correct answer (zero-based from JSON)
-    QJsonArray correct = question.contains("answer")
-        ? question["answer"].toArray()
-        : (question.contains("correct_order") ? question["correct_order"].toArray() : QJsonArray());
-
+    QJsonArray correct = question["answer"].toArray();
     bool allComplete = true;
-    bool allInRange = true;
     bool allCorrect = true;
     QVariantList ans;
-
-    // For each spinbox (user entry)
     for (int i = 0; i < m_sequenceSpinBoxes.size(); ++i) {
-        int val = m_sequenceSpinBoxes[i]->value();    // user types 1-based (1,2,3,4)
-        if (val == 0) {
-            allComplete = false;
-        }
-        int zeroBasedVal = val - 1;                  // shift to 0-based for comparison
-        ans.append(zeroBasedVal);
-        // Check if input is in range of possible indices
-        if (zeroBasedVal < 0 || zeroBasedVal >= correct.size()) {
-            allInRange = false;
-        }
-        // Compare to JSON answer
-        if (i < correct.size() && zeroBasedVal != correct[i].toInt()) {
+        int val = m_sequenceSpinBoxes[i]->value();
+        if (val == 0) allComplete = false;
+        ans.append(val - 1);
+        if (i < correct.size() && (val - 1) != correct[i].toInt()) {
             allCorrect = false;
         }
     }
-
     r.userAnswer = ans;
     if (!allComplete) {
-        r.isCorrect = false;
-        r.message = "Please complete the sequence with numbers.";
-        return r;
-    }
-    if (!allInRange) {
-        r.isCorrect = false;
-        r.message = "Invalid numbers entered in sequence.";
+        r.message = "Please complete the sequence.";
         return r;
     }
     r.isCorrect = allCorrect;
-    if (!allCorrect) {
-        r.message = "Incorrect sequence.";
-    }
+    if (!allCorrect) r.message = "Incorrect sequence.";
     return r;
 }
-
-
 
 QuestionResult QuestionHandlers::checkOrderPhrase(const QJsonObject &question) {
     QuestionResult r;
     QStringList correct, attempt;
     for (auto v: question["answer"].toArray()) correct << v.toString();
-    if (correct.isEmpty() && question.contains("correct_order")) {
-        for (auto v: question["correct_order"].toArray()) correct << v.toString();
-    }
     for (auto lbl: m_orderPhraseLabels) attempt << lbl->text();
     r.isCorrect = (attempt == correct);
     r.userAnswer = attempt;
@@ -1002,26 +937,14 @@ QuestionResult QuestionHandlers::checkFillBlanksDropdown(const QJsonObject &ques
     QuestionResult r;
     bool allCorrect = true;
     QVariantList userAnswers;
-
-    // Simply iterate stored combo boxes, same order as creation
-    QJsonArray correctAnswers = question.contains("answers")
-        ? question["answers"].toArray()
-        : (question.contains("correct_answers") ? question["correct_answers"].toArray() : QJsonArray());
-
+    QJsonArray correctAnswers = question["answers"].toArray();
     for (int i = 0; i < m_fillBlanksDropdowns.size(); ++i) {
         QString sel = m_fillBlanksDropdowns[i]->currentText();
         userAnswers.append(sel);
-
-        if (i < correctAnswers.size()) {
-            QString correct = correctAnswers[i].toString();
-            if (sel != correct) {
-                allCorrect = false;
-            }
-        } else {
+        if (i < correctAnswers.size() && sel != correctAnswers[i].toString()) {
             allCorrect = false;
         }
     }
-
     r.userAnswer = userAnswers;
     r.isCorrect = allCorrect;
     if (!allCorrect) r.message = "Some blanks incorrect.";
@@ -1032,20 +955,15 @@ QuestionResult QuestionHandlers::checkMatchPhrases(const QJsonObject &question) 
     QuestionResult r;
     bool all = true;
     QVariantMap ans;
-
-    // In JSON: "answer": { "source text" : "target text" }
     QJsonObject correctMap = question["answer"].toObject();
     QJsonArray pairs = question["pairs"].toArray();
-
     for (int i = 0; i < pairs.size(); ++i) {
-        QJsonObject pair = pairs[i].toObject();
-        QString source = pair["source"].toString();
+        QString source = pairs[i].toObject()["source"].toString();
         QString sel = m_matchPhraseCombos[i]->currentText();
         ans[source] = sel;
         if (sel != correctMap.value(source).toString())
             all = false;
     }
-
     r.userAnswer = ans;
     r.isCorrect = all;
     if (!all) r.message = "Incorrect matching.";
@@ -1056,17 +974,12 @@ QuestionResult QuestionHandlers::checkImageTagging(const QJsonObject &question)
 {
     QuestionResult r;
     bool allCorrect = true;
-
     QJsonObject altObj = question;
-    if (m_imageTaggingAlternatives.size() > 0 && m_imageTaggingAltIndex > 0 && (m_imageTaggingAltIndex - 1) < m_imageTaggingAlternatives.size()) {
+    if (m_imageTaggingAltIndex > 0 && m_imageTaggingAltIndex <= m_imageTaggingAlternatives.size()) {
         altObj = m_imageTaggingAlternatives[m_imageTaggingAltIndex - 1].toObject();
     }
-
-    QJsonArray tags = altObj.contains("tags") ? altObj["tags"].toArray() : question["tags"].toArray();
-    QJsonObject answer = altObj.contains("answer") ? altObj["answer"].toObject() : question["answer"].toObject();
-
-    
-    QString debugCoords;
+    QJsonArray tags = altObj["tags"].toArray();
+    QJsonObject answer = altObj["answer"].toObject();
     for (auto tagVal : tags) {
         QJsonObject tagObj = tagVal.toObject();
         QString tagId = tagObj["id"].toString();
@@ -1087,36 +1000,23 @@ QuestionResult QuestionHandlers::checkImageTagging(const QJsonObject &question)
 
         double dist = std::hypot(pos.x() - cx, pos.y() - cy);
 
-#if DEBUG_IMAGE_TAGGING
-        qDebug() << "[ImageTagging] Tag" << tagId
-                 << "User placed (" << pos.x() << "," << pos.y() << ")"
-                 << ", expected (" << cx << "," << cy << ")"
-                 << ", distance =" << dist;
-        debugCoords += QString("Tag '%1': placed (%.1f, %.1f), expected (%.1f, %.1f), Δ=%.1f\n")
-                        .arg(tagId)
-                        .arg(pos.x()).arg(pos.y())
-                        .arg(cx).arg(cy)
-                        .arg(dist);
-#endif
+        // ✨ Here is our new, fabulous debug message! ✨
+        qDebug() << "[ImageTagging] Tag:" << tagId
+                << "User placed at (" << pos.x() << "," << pos.y() << ")"
+                << "--- Expected at (" << cx << "," << cy << ")"
+                << "--- Distance:" << dist;
 
-        // Use a tolerance for placement, e.g. <= 20 pixels
-        if (dist > 20)
+        // Use a tolerance for placement, e.g. <= 50 pixels
+        if (dist > 50)
             allCorrect = false;
     }
-
     r.isCorrect = allCorrect;
-    if (!allCorrect) {
-        r.message = "Tags not in correct positions.";
-#if DEBUG_IMAGE_TAGGING
-        r.message += "\n--- Debug Tag Info ---\n" + debugCoords;
-#endif
-    }
+    if (!allCorrect) r.message = "Tags not in correct positions.";
     return r;
 }
 
-
-// ------------- Dispatcher -------------
 QuestionResult QuestionHandlers::checkAnswer(const QJsonObject &question) {
+    m_currentQuestionType = question["type"].toString();
     if (m_currentQuestionType == "mcq_single") return checkMcqSingle(question);
     if (m_currentQuestionType == "mcq_multiple") return checkMcqMultiple(question);
     if (m_currentQuestionType == "word_fill") return checkWordFill(question);
@@ -1129,28 +1029,8 @@ QuestionResult QuestionHandlers::checkAnswer(const QJsonObject &question) {
     if (m_currentQuestionType == "fill_blanks_dropdown") return checkFillBlanksDropdown(question);
     if (m_currentQuestionType == "match_phrases") return checkMatchPhrases(question);
     if (m_currentQuestionType == "image_tagging") return checkImageTagging(question);
-
     QuestionResult r;
     r.isCorrect = false;
     r.message = "Unknown type.";
     return r;
-}
-
-// ------------- Helpers -------------
-void QuestionHandlers::setTagPositions(const QVariantMap &positions) {
-    m_tagPositions = positions;
-}
-
-QVariantMap QuestionHandlers::getTagPositions() const {
-    return m_tagPositions;
-}
-
-QString QuestionHandlers::resolveImagePath(const QString &path) const {
-    if (QFileInfo(path).isAbsolute()) return path;
-    return QDir(m_mediaDir).absoluteFilePath(path);
-}
-
-void QuestionHandlers::addMediaButtons(const QJsonObject &media, QWidget *parent) {
-    if (m_mediaHandler && parent)
-        m_mediaHandler->addMediaButtons(media, parent, m_mediaDir);
 }

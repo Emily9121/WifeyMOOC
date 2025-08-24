@@ -16,7 +16,8 @@
 #include <QPushButton>
 #include <QSet>
 #include <QCheckBox>
-#include "droptag.h" // For ImageTaggingWidget
+#include <QToolButton>
+#include "droptag.h"
 
 class MediaHandler;
 
@@ -36,8 +37,10 @@ public:
         QWidget *parent = nullptr,
         const QString &mediaDir = QString(),
         MediaHandler *mediaHandler = nullptr,
-        int imageTaggingAltIndex = 0); // <-- ADD THIS ARG
+        int imageTaggingAltIndex = 0,
+        const QString &questionKey = "");
 
+    QuestionResult checkAnswer(const QJsonObject &questionBlock, int blockIndex);
     QuestionResult checkAnswer(const QJsonObject &question);
     void clearCurrentQuestion();
 
@@ -47,11 +50,7 @@ public:
     void setTagPositions(const QVariantMap &positions);
     QVariantMap getTagPositions() const;
 
-public:
-    void addMediaButtons(const QJsonObject &media, QWidget *parent);
-
 private:
-    // Question type handlers
     QWidget* createMcqSingle(const QJsonObject &question, QWidget *parent);
     QWidget* createMcqMultiple(const QJsonObject &question, QWidget *parent);
     QWidget* createWordFill(const QJsonObject &question, QWidget *parent);
@@ -65,7 +64,6 @@ private:
     QWidget* createMatchPhrases(const QJsonObject &question, QWidget *parent);
     QWidget* createImageTagging(const QJsonObject &question, QWidget *parent);
 
-    // Answer checkers
     QuestionResult checkMcqSingle(const QJsonObject &question);
     QuestionResult checkMcqMultiple(const QJsonObject &question);
     QuestionResult checkWordFill(const QJsonObject &question);
@@ -79,34 +77,31 @@ private:
     QuestionResult checkMatchPhrases(const QJsonObject &question);
     QuestionResult checkImageTagging(const QJsonObject &question);
 
-    // Helpers
+    QuestionResult checkAnswerDispatcher(const QJsonObject& question, const QString& key);
     QString resolveImagePath(const QString &path) const;
-
-    // Clanker Edit
     void moveOrderPhraseWord(int index, int direction);
 
-    // State
     QString m_currentQuestionType;
     QWidget *m_currentQuestionWidget;
     QJsonObject m_currentQuestion;
+    QString m_currentQuestionKey;
     QString m_mediaDir;
     MediaHandler *m_mediaHandler;
 
-    // UI storage
     QButtonGroup *m_mcqButtonGroup;
+    QMap<QString, QButtonGroup*> m_buttonGroups;
     QList<QCheckBox*> m_mcqCheckBoxes;
     QList<QLineEdit*> m_wordFillEntries;
     QListWidget *m_listPickWidget;
     QList<QComboBox*> m_matchComboBoxes;
     QComboBox *m_categorizationCombo;
-    QList<QComboBox*> m_multipleCategorizationCombos;
+    QMap<QString, QList<QComboBox*>> m_multipleCategorizationCombosMap;
     QList<QSpinBox*> m_sequenceSpinBoxes;
     QList<QPushButton*> m_orderPhraseWords;
     QList<QLabel*> m_orderPhraseLabels;
     QList<QComboBox*> m_fillBlanksDropdowns;
     QList<QComboBox*> m_matchPhraseCombos;
 
-    // Image tagging
     ImageTaggingWidget *m_imageTaggingWidget;
     QList<DropTag*> m_dropTags;
     QLabel *m_imageLabel;

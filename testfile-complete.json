@@ -1,0 +1,325 @@
+[
+  {
+    "type": "list_pick",
+    "question": "Pick all the cute fruit combos you want in your smoothie bowl! 🍓🥭🍍",
+    "options": [
+      "Strawberry + Banana",
+      "Mango + Pineapple",
+      "Blueberry + Kiwi",
+      "Peach + Raspberry"
+    ],
+    "answer": [0, 2]
+  },
+  {
+    "type": "sequence_audio",
+    "question": "Listen to the sweet fruity sounds and put them in the order you hear, babe! 🎧🍉",
+    "audio_options": [
+      {"option": "Juicy watermelon splash"},
+      {"option": "Pineapple sizzle"},
+      {"option": "Mango pop"},
+      {"option": "Berry swirl"}
+    ],
+    "answer": [2, 0, 3, 1] ,
+    "media": {
+          "audio": "audios/audio3.mp3"
+        }
+  },
+{
+    "type": "match_sentence",
+    "question": "Associez l'image au mot correspondant :",
+    "pairs": [
+      {"sentence": "Un compostage de titre de transport", "image_path": "images/2.jpg"},
+      {"sentence": "Une correspondance", "image_path": "images/4.jpg"},
+      {"sentence": "Un panneau d'affichage", "image_path": "images/6.jpg"},
+      {"sentence": "Une ligne de métro", "image_path": "images/1.jpg"},
+      {"sentence": "Une direction", "image_path": "images/3.jpg"},
+      {"sentence": "Un guichet automatique", "image_path": "images/5.jpg"}
+    ],
+    "answer": {
+      "images/2.jpg": "Un compostage de titre de transport",
+      "images/4.jpg": "Une correspondance",
+      "images/6.jpg": "Un panneau d'affichage",
+      "images/1.jpg": "Une ligne de métro",
+      "images/3.jpg": "Une direction",
+      "images/5.jpg": "Un guichet automatique"
+    },
+    "media": null
+  },
+    {
+    "type": "mcq_single",
+    "question": "(Video 2 Without Audio) Quelle est la couleur des panneaux qui indiquent les différentes sorties du métro ? ",
+    "options": ["Bleu", "Blanc", "Jaune"],
+    "answer": [0],
+    "media": {"video": "videos/2.mp4"}
+  },
+  {
+    "type": "fill_blanks_dropdown",
+    "question": "(Video 2) Choisissez la bonne réponse dans la liste proposée :",
+    "sentence_parts": [
+        "Dans le métro, il y a au total... ",
+        "\n Les lignes de métro bis sont...",
+        "\nA la station Châtelet, vous pouvez trouver...",
+        "\nChaque sortie est indiquée par... ",
+        "."
+      ],
+"options_for_blanks": [
+      [" ", "10 lignes.", "13 lignes.", "16 lignes."],
+      [" ", "la 3 bis et la 5 bis.", "la 3 bis et la 7 bis.", "la 3 bis et la 16 bis."],
+      [" ", "seize lignes de métro.", "seulement des lignes de RER.", "six ou sept lignes de métro et quatre lignes de RER."],
+      [" ", "le nom d’une rue.", "le nom de la station.", "la direction de la ligne."]
+        ],
+    "answers": ["16 lignes.", "la 3 bis et la 7 bis.", "six ou sept lignes de métro et quatre lignes de RER.", "le nom d’une rue."],
+    "media": {"video": "videos/2.mp4"}
+  },
+    {
+    "type": "mcq_multiple",
+    "question": "(Video 2) Quelles informations peut-on trouver sur un plan de métro ?",
+    "options": [
+      "le plan de métro et les sorties.",
+      "les correspondances, les directions.",
+      "le plan de métro et le plan du quartier.",
+      "le nom des agences et les directions des lignes."
+    ],
+    "answer": [0, 2],
+    "media": {
+      "video": "videos/2.mp4"
+    }
+  },
+    {
+    "type": "order_phrase",
+    "question": "Remettez dans l’ordre les indications que donne l’agent pour aller à la station :",
+    "phrase_shuffled": [
+      "Soyez vigilant.",
+      "Allez tout droit.",
+      "Descendez à la station.",
+      "Dirigez-vous à gauche.",
+      "Vérifiez que la station est bien indiquée sur le panneau.",
+      "Regardez les écrans.",
+      "Ne montez pas dans n’importe quel train."
+    ],
+    "answer": [
+      "Descendez à la station.",
+      "Dirigez-vous à gauche.",
+      "Allez tout droit.",
+      "Regardez les écrans.",
+      "Ne montez pas dans n’importe quel train.",
+      "Soyez vigilant.",
+      "Vérifiez que la station est bien indiquée sur le panneau."
+    ],
+    "media": {"audio": "audios/audio2.mp3"}
+  },
+  {
+    "type": "categorization_multiple",
+    "question": "Mettez chaque verbe dans la bonne catégorie :",
+    "stimuli": [
+      {"text": "Nous n'achetons pas de pass.", "image": null},
+      {"text": "Repérez-vous avec les directions.", "image": null},
+      {"text": "Allez au guichet.", "image": null},
+      {"text": "Demande un plan de métro.", "image": null},
+      {"text": "Vous prenez la ligne 5.", "image": null},
+      {"text": "N'attendez pas l'agent.", "image": null},
+      {"text": "Tu entres avec ton ticket.", "image": null}
+    ],
+    "categories": [
+      " ",
+      "Verbes à l'impératif",
+      "Verbes au présent (de l'indicatif)"
+    ],
+    "answer": {
+      "Nous n'achetons pas de pass.": "Verbes au présent (de l'indicatif)",
+      "Repérez-vous avec les directions.": "Verbes à l'impératif",
+      "Allez au guichet.": "Verbes à l'impératif",
+      "Demande un plan de métro.": "Verbes à l'impératif",
+      "Vous prenez la ligne 5.": "Verbes au présent (de l'indicatif)",
+      "N'attendez pas l'agent.": "Verbes à l'impératif",
+      "Tu entres avec ton ticket.": "Verbes au présent (de l'indicatif)"
+    },
+      "media": {
+        "video": "videos/3.mp4"
+        }
+  },
+  {
+    "type": "word_fill",
+    "question": "Mettez les verbes entre parenthèses à l'impératif :",
+    "sentence_parts": [
+      "Monsieur, (vérifier)",
+      "bien votre nom et votre prénom sur votre carte. Nous avons besoin de prendre le bus 176. (être)",
+      "aux horaires pour ne pas être en retard. S'il y a beaucoup de monde dans votre rame de métro, (se lever)",
+      "si vous êtes à côté de la porte."
+    ],
+    "answers": [
+      "vérifiez",
+      "Soyons",
+      "levez-vous"
+    ],
+      "media": {
+        "video": "videos/3.mp4"
+        }
+  },
+  {
+    "type": "match_phrases",
+    "question": "Associez les débuts et fins de phrases :",
+    "pairs": [
+      {
+        "source": "Dans le métro, pour nous repérer ...",
+        "targets": [
+          " ",
+          "ayez votre titre de transport avec vous.",
+          "valide ton titre de transport à l'intérieur du tram.",
+          "regardons les panneaux dans la station.",
+          "va dans une agence de la RATP."
+        ]
+      },
+      {
+        "source": "Quand tu prends le tramway...",
+        "targets": [
+          " ",
+          "ayez votre titre de transport avec vous.",
+          "valide ton titre de transport à l'intérieur du tram.",
+          "regardons les panneaux dans la station.",
+          "va dans une agence de la RATP."
+        ]
+      },
+      {
+        "source": "Pour prendre les transports en commun ...",
+        "targets": [
+          " ",
+          "ayez votre titre de transport avec vous.",
+          "valide ton titre de transport à l'intérieur du tram.",
+          "regardons les panneaux dans la station.",
+          "va dans une agence de la RATP."
+        ]
+      },
+      {
+        "source": "Tu as besoin d'un dossier pour ton pass Navigo ...",
+        "targets": [
+          " ",
+          "ayez votre titre de transport avec vous.",
+          "valide ton titre de transport à l'intérieur du tram.",
+          "regardons les panneaux dans la station.",
+          "va dans une agence de la RATP."
+        ]
+      }
+    ],
+    "answer": {
+      "Dans le métro, pour nous repérer ...": "regardons les panneaux dans la station.",
+      "Quand tu prends le tramway...": "valide ton titre de transport à l'intérieur du tram.",
+      "Pour prendre les transports en commun ...": "ayez votre titre de transport avec vous.",
+      "Tu as besoin d'un dossier pour ton pass Navigo ...": "va dans une agence de la RATP."
+    },
+    "media": null
+  },
+  {
+  "type": "categorization_multiple",
+  "question": "(Audio 8) Associez chaque image avec la bonne description :",
+  "stimuli": [
+    { "image": "images/27.png" },
+    { "image": "images/28.png" },
+    { "image": "images/29.png" },
+    { "image": "images/30.png" },
+    { "image": "images/31.png" }
+  ],
+  "categories": [
+    "Le paiement : Yuta donne sa carte vitale ou le médecin fait une feuille de soin, et le patient paye.",
+    "La description des symptômes : Yuta explique où il a mal, quel est son problème de santé.",
+    "Le diagnostic : le médecin dit quelle est la cause du problème et le nom de la maladie.",
+    "L'examen médical : le médecin examine le patient.",
+    "L'ordonnance : le médecin écrit et explique les médicaments à acheter, ou les autres examens à faire."
+  ],
+  "answer": {
+    "27.png": "Le paiement : Yuta donne sa carte vitale ou le médecin fait une feuille de soin, et le patient paye.",
+    "28.png": "La description des symptômes : Yuta explique où il a mal, quel est son problème de santé.",
+    "29.png": "Le diagnostic : le médecin dit quelle est la cause du problème et le nom de la maladie.",
+    "30.png": "L'examen médical : le médecin examine le patient.",
+    "31.png": "L'ordonnance : le médecin écrit et explique les médicaments à acheter, ou les autres examens à faire."
+  },
+  "media": {
+    "audio": "audios/audio8.mp3"
+  }
+  },
+  {
+    "type": "multi_questions",
+    "questions": [
+      {
+        "type": "mcq_single",
+        "question": "Lequel de ces macarons est le plus adorable pour un pique-nique à Paris ? 💖",
+        "options": [
+          {"image": "images/32.jpg", "text": "Macaron à la framboise"},
+          {"image": "images/33.jpg", "text": "Macaron au chocolat"},
+          {"image": "images/34.jpg", "text": "Macaron à la pistache"}
+        ],
+        "answer": [0]
+      },
+      {
+        "type": "mcq_multiple",
+        "question": "Pour une journée parfaite, quelles activités chic choisirais-tu ?",
+        "options": [
+          {"image": "images/35.jpg", "text": "Faire du shopping"},
+          {"image": "images/36.jpg", "text": "Visiter le Louvre"},
+          {"image": "images/37.jpg", "text": "Manger des crêpes"}
+        ],
+        "answer": [0, 2]
+      }
+    ]
+  },
+  {
+  "type": "image_tagging",
+  "question": "Placez chaque étiquette sur la bonne partie du corps de Yuta :",
+  "media": {
+    "image": "images/body.jpg"
+  },
+  "button_label": "Offrir des œstrogènes", 
+  "tags": [
+    { "label": "aux muscles", "id": "muscles" },
+    { "label": "aux poumons", "id": "poumons" },
+    { "label": "à l'estomac", "id": "estomac" },
+    { "label": "au cœur", "id": "coeur" },
+    { "label": "à la gorge", "id": "gorge" },
+    { "label": "aux yeux", "id": "yeux" },
+    { "label": "à l'épaule", "id": "epaule" },
+    { "label": "au ventre", "id": "ventre" },
+    { "label": "au bras", "id": "bras" }
+  ],
+  "answer": {
+    "muscles": [161.33, 517.10],
+    "poumons": [332.33, 518.10],
+    "estomac": [332.33, 644.10],
+    "coeur": [392.33, 448.10],
+    "gorge": [328.33, 288.10],
+    "yeux": [327.33, 179.10],
+    "epaule": [496.33, 368.10],
+    "ventre": [341.33, 589.10],
+    "bras": [488.33, 589.10]
+  },
+  "alternatives": [
+    {
+      "media": {
+        "image": "images/bodyg.jpg"
+      },
+      "button_label": "Plz dont click", 
+      "tags": [
+        { "label": "aux muscles", "id": "muscles" },
+        { "label": "aux poumons", "id": "poumons" },
+        { "label": "à l'estomac", "id": "estomac" },
+        { "label": "au cœur", "id": "coeur" },
+        { "label": "à la gorge", "id": "gorge" },
+        { "label": "aux yeux", "id": "yeux" },
+        { "label": "à l'épaule", "id": "epaule" },
+        { "label": "au ventre", "id": "ventre" },
+        { "label": "au bras", "id": "bras" }
+      ],
+      "answer": {
+        "muscles": [126.0, 449.0],
+        "poumons": [287.0, 489.0],
+        "estomac": [298.0, 607.0],
+        "coeur": [355.0, 373.0],
+        "gorge": [298.0, 280.0],
+        "yeux": [302.0, 188.0],
+        "epaule": [467.0, 330.0],
+        "ventre": [306.0, 548.0],
+        "bras": [461.0, 544.0]
+      }
+    }
+  ]
+}
+]
