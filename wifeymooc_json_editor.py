@@ -603,28 +603,30 @@ class WifeyMOOCEditor:
                  bg=self.colors['accent'], fg=self.colors['button_text'], font=('Arial', 10, 'bold')).pack(pady=8)
 
     def create_question_text_section(self, question, index, label_text="📝 Question Text 📝"):
-        """Create the question text editing section - the heart of it all! 💖"""
-        text_frame = tk.LabelFrame(self.editor_frame, text=label_text,
-                                  font=('Arial', 12, 'bold'), bg=self.colors['white'],
-                                  fg=self.colors['text'])
-        text_frame.pack(fill=tk.X, padx=10, pady=10)
+            """Create the question text editing section - now with multi-line magic! 💖"""
+            text_frame = tk.LabelFrame(self.editor_frame, text=label_text,
+                                    font=('Arial', 12, 'bold'), bg=self.colors['white'],
+                                    fg=self.colors['text'])
+            text_frame.pack(fill=tk.X, padx=10, pady=10)
 
-        tk.Label(text_frame, text="💡 Write your question here, sweetie!",
-                bg=self.colors['white'], fg=self.colors['text'],
-                font=('Arial', 9, 'italic')).pack(pady=5)
+            tk.Label(text_frame, text="💡 Write your question here, sweetie! You can use Enter for newlines! ✨",
+                    bg=self.colors['white'], fg=self.colors['text'],
+                    font=('Arial', 9, 'italic')).pack(pady=5)
+            
+            # 🪄 Swapped tk.Entry for tk.Text to allow multiple lines! Poof!
+            text_widget = tk.Text(text_frame, height=4, font=('Arial', 11),
+                                bg=self.colors['entry'], width=80, wrap=tk.WORD)
+            text_widget.pack(padx=10, pady=10, fill=tk.X)
+            text_widget.insert('1.0', question.get('question', '')) # How we add text now!
 
-        text_var = tk.StringVar(value=question.get('question', ''))
-        text_entry = tk.Entry(text_frame, textvariable=text_var, font=('Arial', 11),
-                             bg=self.colors['entry'], width=80)
-        text_entry.pack(padx=10, pady=10, fill=tk.X)
+            def save_question_text():
+                # How we get text from the new widget!
+                question['question'] = text_widget.get('1.0', tk.END).strip()
+                self.refresh_questions_list()
+                messagebox.showinfo("Success! 💖", "Question text updated beautifully!")
 
-        def save_question_text():
-            question['question'] = text_var.get()
-            self.refresh_questions_list()
-            messagebox.showinfo("Success! 💖", "Question text updated beautifully!")
-
-        tk.Button(text_frame, text="💾 Save Question Text", command=save_question_text,
-                 bg=self.colors['accent'], fg=self.colors['button_text'], font=('Arial', 10, 'bold')).pack(pady=5)
+            tk.Button(text_frame, text="💾 Save Question Text", command=save_question_text,
+                    bg=self.colors['accent'], fg=self.colors['button_text'], font=('Arial', 10, 'bold')).pack(pady=5)
 
     def edit_question(self, index):
         """Edit question at specified index - the main magic! ✨"""
@@ -1148,7 +1150,7 @@ class WifeyMOOCEditor:
                 self.edit_mcq_single(subq, idx)
             elif qtype == 'mcq_multiple':
                 self.edit_mcq_multiple(subq, idx)
-            elif qtype == 'image_tagging':  # 🆕 Now properly supported!
+            elif qtype == 'image_tagging':
                 self.edit_image_tagging(subq, idx)
             elif qtype == 'list_pick':
                 self.edit_list_pick(subq, idx)
@@ -1158,8 +1160,16 @@ class WifeyMOOCEditor:
                 self.edit_match_sentence(subq, idx)
             elif qtype == 'categorization_multiple':
                 self.edit_categorization_multiple(subq, idx)
-            # Add other types as needed...
-
+            elif qtype == 'fill_blanks_dropdown':
+                self.edit_fill_blanks_dropdown(subq, idx)
+            # ✨💖 Here are the other cuties you found! 💖✨
+            elif qtype == 'sequence_audio':
+                self.edit_sequence_audio(subq, idx)
+            elif qtype == 'order_phrase':
+                self.edit_order_phrase(subq, idx)
+            elif qtype == 'match_phrases':
+                self.edit_match_phrases(subq, idx)
+                
             # Close button
             tk.Button(detail_dialog, text="💖 Close & Refresh", 
                      command=lambda: [detail_dialog.destroy(), refresh_subquestions()],
@@ -1515,120 +1525,127 @@ class WifeyMOOCEditor:
                  bg=self.colors['accent'], fg=self.colors['button_text'], font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=5)
 
     def edit_word_fill(self, question, index):
-        """Editor for word_fill questions - fill in the blanks cutely! 💖"""
-        self.create_question_text_section(question, index)
-        self.create_media_section(question, index)
+            """Editor for word_fill questions - now with multi-line sentence parts! 💖"""
+            self.create_question_text_section(question, index)
+            self.create_media_section(question, index)
 
-        # Sentence parts section
-        parts_frame = tk.LabelFrame(self.editor_frame, text="📝 Sentence Parts (Text before and after blanks) 📝",
-                                   font=('Arial', 12, 'bold'), bg=self.colors['white'],
-                                   fg=self.colors['text'])
-        parts_frame.pack(fill=tk.X, padx=10, pady=10)
+            # Sentence parts section
+            parts_frame = tk.LabelFrame(self.editor_frame, text="📝 Sentence Parts (Now supports newlines!) 📝",
+                                    font=('Arial', 12, 'bold'), bg=self.colors['white'],
+                                    fg=self.colors['text'])
+            parts_frame.pack(fill=tk.X, padx=10, pady=10)
 
-        tk.Label(parts_frame, text="💡 Example: 'The cat is ' [BLANK] ' and very ' [BLANK] ' today.'\nCreate parts: ['The cat is ', ' and very ', ' today.']",
-                bg=self.colors['white'], fg=self.colors['text'], font=('Arial', 9, 'italic')).pack(pady=5)
+            tk.Label(parts_frame, text="💡 Example: 'The cat is ' [BLANK] ' and very ' [BLANK] ' today.'\nCreate parts: ['The cat is ', ' and very ', ' today.']",
+                    bg=self.colors['white'], fg=self.colors['text'], font=('Arial', 9, 'italic')).pack(pady=5)
 
-        parts_list_frame = tk.Frame(parts_frame, bg=self.colors['white'])
-        parts_list_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+            parts_list_frame = tk.Frame(parts_frame, bg=self.colors['white'])
+            parts_list_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
-        self.word_fill_parts_vars = []
+            self.word_fill_parts_widgets = [] # We'll store the widgets themselves now!
 
-        def refresh_parts():
-            for widget in parts_list_frame.winfo_children():
-                widget.destroy()
-            self.word_fill_parts_vars.clear()
+            def refresh_parts():
+                for widget in parts_list_frame.winfo_children():
+                    widget.destroy()
+                self.word_fill_parts_widgets.clear()
 
-            for i, part in enumerate(question.get('sentence_parts', [])):
-                row_frame = tk.Frame(parts_list_frame, bg=self.colors['white'])
-                row_frame.pack(fill=tk.X, pady=2)
+                for i, part in enumerate(question.get('sentence_parts', [])):
+                    row_frame = tk.Frame(parts_list_frame, bg=self.colors['white'])
+                    row_frame.pack(fill=tk.X, pady=2)
 
-                tk.Label(row_frame, text=f"Part {i+1}:", bg=self.colors['white'],
-                        font=('Arial', 10, 'bold')).pack(side=tk.LEFT)
+                    tk.Label(row_frame, text=f"Part {i+1}:", bg=self.colors['white'],
+                            font=('Arial', 10, 'bold')).pack(side=tk.LEFT)
 
-                part_var = tk.StringVar(value=part)
-                tk.Entry(row_frame, textvariable=part_var, bg=self.colors['entry'],
-                        width=60, font=('Arial', 10)).pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
-                self.word_fill_parts_vars.append(part_var)
+                    # 🪄 Another magical tk.Text widget! So versatile!
+                    part_widget = tk.Text(row_frame, height=2, bg=self.colors['entry'],
+                                        width=60, font=('Arial', 10), wrap=tk.WORD)
+                    part_widget.pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
+                    part_widget.insert('1.0', part)
+                    self.word_fill_parts_widgets.append(part_widget)
 
-                if len(question.get('sentence_parts', [])) > 2:
-                    tk.Button(row_frame, text="🗑️", bg='#FF6347', fg=self.colors['button_text'],
-                             command=lambda idx=i: delete_part(idx)).pack(side=tk.RIGHT, padx=2)
+                    if len(question.get('sentence_parts', [])) > 1: # Let's allow removing all but one
+                        tk.Button(row_frame, text="🗑️", bg='#FF6347', fg=self.colors['button_text'],
+                                command=lambda idx=i: delete_part(idx)).pack(side=tk.RIGHT, padx=2)
 
-        # Answers section
-        answers_frame = tk.LabelFrame(parts_frame, text="✅ Correct Answers for Blanks ✅",
-                                     font=('Arial', 11, 'bold'), bg=self.colors['white'],
-                                     fg=self.colors['text'])
-        answers_frame.pack(fill=tk.X, padx=5, pady=10)
+            # Answers section (this can stay as single-line Entries)
+            answers_frame = tk.LabelFrame(parts_frame, text="✅ Correct Answers for Blanks ✅",
+                                        font=('Arial', 11, 'bold'), bg=self.colors['white'],
+                                        fg=self.colors['text'])
+            answers_frame.pack(fill=tk.X, padx=5, pady=10)
 
-        tk.Label(answers_frame, text="💡 Enter the correct word/phrase for each blank!",
-                bg=self.colors['white'], fg=self.colors['text'],
-                font=('Arial', 9, 'italic')).pack(pady=5)
+            tk.Label(answers_frame, text="💡 Enter the correct word/phrase for each blank!",
+                    bg=self.colors['white'], fg=self.colors['text'],
+                    font=('Arial', 9, 'italic')).pack(pady=5)
 
-        answers_list_frame = tk.Frame(answers_frame, bg=self.colors['white'])
-        answers_list_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+            answers_list_frame = tk.Frame(answers_frame, bg=self.colors['white'])
+            answers_list_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
-        self.word_fill_answers_vars = []
+            self.word_fill_answers_vars = []
 
-        def refresh_answers():
-            for widget in answers_list_frame.winfo_children():
-                widget.destroy()
-            self.word_fill_answers_vars.clear()
+            def refresh_answers():
+                for widget in answers_list_frame.winfo_children():
+                    widget.destroy()
+                self.word_fill_answers_vars.clear()
 
-            for i, answer in enumerate(question.get('answers', [])):
-                row_frame = tk.Frame(answers_list_frame, bg=self.colors['white'])
-                row_frame.pack(fill=tk.X, pady=2)
+                for i, answer in enumerate(question.get('answers', [])):
+                    row_frame = tk.Frame(answers_list_frame, bg=self.colors['white'])
+                    row_frame.pack(fill=tk.X, pady=2)
 
-                tk.Label(row_frame, text=f"Answer for Blank {i+1}:", bg=self.colors['white'],
-                        font=('Arial', 10, 'bold')).pack(side=tk.LEFT)
+                    tk.Label(row_frame, text=f"Answer for Blank {i+1}:", bg=self.colors['white'],
+                            font=('Arial', 10, 'bold')).pack(side=tk.LEFT)
 
-                answer_var = tk.StringVar(value=answer)
-                tk.Entry(row_frame, textvariable=answer_var, bg=self.colors['entry'],
-                        width=40, font=('Arial', 10)).pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
-                self.word_fill_answers_vars.append(answer_var)
+                    answer_var = tk.StringVar(value=answer)
+                    tk.Entry(row_frame, textvariable=answer_var, bg=self.colors['entry'],
+                            width=40, font=('Arial', 10)).pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
+                    self.word_fill_answers_vars.append(answer_var)
 
-                if len(question.get('answers', [])) > 1:
-                    tk.Button(row_frame, text="🗑️", bg='#FF6347', fg=self.colors['button_text'],
-                             command=lambda idx=i: delete_answer(idx)).pack(side=tk.RIGHT, padx=2)
+                    if len(question.get('answers', [])) > 0: # Allow removing all answers
+                        tk.Button(row_frame, text="🗑️", bg='#FF6347', fg=self.colors['button_text'],
+                                command=lambda idx=i: delete_answer(idx)).pack(side=tk.RIGHT, padx=2)
 
-        def add_part():
-            question.setdefault('sentence_parts', []).append('')
-            refresh_parts()
-
-        def delete_part(idx):
-            if len(question.get('sentence_parts', [])) > 2:
-                del question['sentence_parts'][idx]
+            def add_part():
+                question.setdefault('sentence_parts', []).append('')
                 refresh_parts()
 
-        def add_answer():
-            question.setdefault('answers', []).append('')
-            refresh_answers()
+            def delete_part(idx):
+                if len(question.get('sentence_parts', [])) > 1:
+                    del question['sentence_parts'][idx]
+                    refresh_parts()
 
-        def delete_answer(idx):
-            if len(question.get('answers', [])) > 1:
-                del question['answers'][idx]
+            def add_answer():
+                question.setdefault('answers', []).append('')
                 refresh_answers()
 
-        def save_all():
-            question['sentence_parts'] = [var.get() for var in self.word_fill_parts_vars]
-            question['answers'] = [var.get() for var in self.word_fill_answers_vars if var.get().strip()]
-            messagebox.showinfo("Success! 💖", "Word fill data saved perfectly, babe!")
+            def delete_answer(idx):
+                if idx < len(question.get('answers', [])):
+                    del question['answers'][idx]
+                    refresh_answers()
 
-        refresh_parts()
-        refresh_answers()
+            def save_all():
+                # New way to save from our beautiful tk.Text widgets!
+                question['sentence_parts'] = [widget.get('1.0', tk.END) for widget in self.word_fill_parts_widgets]
+                # We need to remove the trailing newline tk.Text adds, but preserve the ones you typed!
+                # So we use a little trick rstrip('\n')
+                question['sentence_parts'] = [text.rstrip('\n') for text in question['sentence_parts']]
 
-        # Buttons
-        btn_frame = tk.Frame(parts_frame, bg=self.colors['white'])
-        btn_frame.pack(fill=tk.X, pady=8)
+                question['answers'] = [var.get() for var in self.word_fill_answers_vars if var.get().strip()]
+                messagebox.showinfo("Success! 💖", "Word fill data saved perfectly, babe!")
 
-        tk.Button(btn_frame, text="➕ Add Part", command=add_part,
-                 bg=self.colors['button'], fg=self.colors['button_text'], font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=2)
+            refresh_parts()
+            refresh_answers()
 
-        tk.Button(btn_frame, text="➕ Add Answer", command=add_answer,
-                 bg=self.colors['button'], fg=self.colors['button_text'], font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=2)
+            # Buttons
+            btn_frame = tk.Frame(parts_frame, bg=self.colors['white'])
+            btn_frame.pack(fill=tk.X, pady=8)
 
-        tk.Button(btn_frame, text="💾 Save Everything", command=save_all,
-                 bg=self.colors['accent'], fg=self.colors['button_text'], font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=2)
+            tk.Button(btn_frame, text="➕ Add Part", command=add_part,
+                    bg=self.colors['button'], fg=self.colors['button_text'], font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=2)
 
+            tk.Button(btn_frame, text="➕ Add Answer", command=add_answer,
+                    bg=self.colors['button'], fg=self.colors['button_text'], font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=2)
+
+            tk.Button(btn_frame, text="💾 Save Everything", command=save_all,
+                    bg=self.colors['accent'], fg=self.colors['button_text'], font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=2)
+            
     def edit_categorization_multiple(self, question, index):
         """Editor for categorization_multiple questions - organize everything cutely! 📂"""
         self.create_question_text_section(question, index)
@@ -2018,18 +2035,143 @@ class WifeyMOOCEditor:
                  bg=self.colors['accent'], fg=self.colors['button_text'], font=('Arial', 10, 'bold')).pack(pady=10)
 
     def edit_fill_blanks_dropdown(self, question, index):
-        """Editor for fill_blanks_dropdown questions - dropdown magic! ⬇️"""
+        """A complete and beautiful editor for fill_blanks_dropdown questions! ⬇️💖"""
         self.create_question_text_section(question, index)
         self.create_media_section(question, index)
 
-        # Simple editor for now
-        dropdown_frame = tk.LabelFrame(self.editor_frame, text="⬇️ Fill Blanks with Dropdowns ⬇️",
-                                      font=('Arial', 12, 'bold'), bg=self.colors['white'],
-                                      fg=self.colors['text'])
-        dropdown_frame.pack(fill=tk.X, padx=10, pady=10)
+        # Main frame for our new, fabulous editor
+        main_editor_frame = tk.LabelFrame(self.editor_frame, text="⬇️ Dropdown Blanks Editor ⬇️",
+                                         font=('Arial', 12, 'bold'), bg=self.colors['white'],
+                                         fg=self.colors['text'])
+        main_editor_frame.pack(fill=tk.X, padx=10, pady=10)
 
-        tk.Label(dropdown_frame, text="💡 This is a complex editor - use JSON view for detailed editing!",
-                bg=self.colors['white'], fg=self.colors['text'], font=('Arial', 10, 'italic')).pack(pady=20)
+        # --- Sentence Parts Section ---
+        parts_frame = tk.LabelFrame(main_editor_frame, text="📝 Sentence Parts (with newlines!)",
+                                   font=('Arial', 11, 'bold'), bg=self.colors['white'])
+        parts_frame.pack(fill=tk.X, padx=5, pady=5)
+
+        parts_list_frame = tk.Frame(parts_frame, bg=self.colors['white'])
+        parts_list_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        
+        self.fbd_parts_widgets = []
+
+        def refresh_parts():
+            for widget in parts_list_frame.winfo_children():
+                widget.destroy()
+            self.fbd_parts_widgets.clear()
+            for i, part in enumerate(question.get('sentence_parts', [])):
+                row_frame = tk.Frame(parts_list_frame, bg=self.colors['white'])
+                row_frame.pack(fill=tk.X, pady=2)
+                tk.Label(row_frame, text=f"Part {i+1}:", bg=self.colors['white']).pack(side=tk.LEFT)
+                part_widget = tk.Text(row_frame, height=2, bg=self.colors['entry'], wrap=tk.WORD)
+                part_widget.pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
+                part_widget.insert('1.0', part)
+                self.fbd_parts_widgets.append(part_widget)
+                if len(question.get('sentence_parts', [])) > 1:
+                    tk.Button(row_frame, text="🗑️", bg='#FF6347', fg=self.colors['button_text'],
+                             command=lambda idx=i: delete_part(idx)).pack(side=tk.RIGHT)
+        
+        # --- Blanks and Options Section ---
+        blanks_frame = tk.LabelFrame(main_editor_frame, text="✅ Blanks, Options & Answers",
+                                    font=('Arial', 11, 'bold'), bg=self.colors['white'])
+        blanks_frame.pack(fill=tk.X, padx=5, pady=10)
+
+        blanks_list_frame = tk.Frame(blanks_frame, bg=self.colors['white'])
+        blanks_list_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        
+        self.fbd_blanks_data = []
+
+        def refresh_blanks():
+            for widget in blanks_list_frame.winfo_children():
+                widget.destroy()
+            self.fbd_blanks_data.clear()
+            
+            options_for_blanks = question.get('options_for_blanks', [])
+            answers = question.get('answers', [])
+
+            for i in range(len(options_for_blanks)):
+                blank_container = tk.LabelFrame(blanks_list_frame, text=f"💖 Dropdown Blank {i+1} 💖",
+                                               bg=self.colors['secondary'])
+                blank_container.pack(fill=tk.X, pady=4, padx=2)
+
+                # Options entry - using a semicolon to separate them! So clever!
+                opts_frame = tk.Frame(blank_container, bg=self.colors['secondary'])
+                opts_frame.pack(fill=tk.X, padx=5, pady=2)
+                tk.Label(opts_frame, text="Options (separate with ';'):", bg=self.colors['secondary']).pack(side=tk.LEFT)
+                options_str = '; '.join(options_for_blanks[i])
+                options_var = tk.StringVar(value=options_str)
+                tk.Entry(opts_frame, textvariable=options_var, bg=self.colors['entry'], font=('Arial', 10)).pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
+
+                # Answer selection - a cute dropdown!
+                ans_frame = tk.Frame(blank_container, bg=self.colors['secondary'])
+                ans_frame.pack(fill=tk.X, padx=5, pady=2)
+                tk.Label(ans_frame, text="✅ Correct Answer:", bg=self.colors['secondary']).pack(side=tk.LEFT)
+                answer_var = tk.StringVar(value=answers[i] if i < len(answers) else '')
+                # The dropdown shows the options from above!
+                answer_combo = ttk.Combobox(ans_frame, textvariable=answer_var,
+                                            values=options_for_blanks[i], state='readonly', width=30)
+                answer_combo.pack(side=tk.LEFT, padx=5)
+
+                if len(options_for_blanks) > 1:
+                    tk.Button(blank_container, text="🗑️ Delete This Blank", bg='#FF6347', fg=self.colors['button_text'],
+                             command=lambda idx=i: delete_blank(idx)).pack(pady=3)
+
+                self.fbd_blanks_data.append({'options_var': options_var, 'answer_var': answer_var})
+
+        def add_part():
+            question.setdefault('sentence_parts', []).append('')
+            refresh_parts()
+
+        def delete_part(idx):
+            if len(question.get('sentence_parts', [])) > 1:
+                del question['sentence_parts'][idx]
+                refresh_parts()
+
+        def add_blank():
+            question.setdefault('options_for_blanks', []).append([' ', 'Option A', 'Option B'])
+            question.setdefault('answers', []).append('Option A')
+            refresh_blanks()
+
+        def delete_blank(idx):
+            if len(question.get('options_for_blanks', [])) > 1:
+                del question['options_for_blanks'][idx]
+                if idx < len(question.get('answers', [])):
+                    del question['answers'][idx]
+                refresh_blanks()
+
+        def save_all():
+            # Save sentence parts from our text widgets
+            parts = [widget.get('1.0', tk.END).rstrip('\n') for widget in self.fbd_parts_widgets]
+            question['sentence_parts'] = parts
+            
+            # Save options and answers
+            new_options = []
+            new_answers = []
+            for data in self.fbd_blanks_data:
+                # Split the options string by ';' and clean it up!
+                opts = [opt.strip() for opt in data['options_var'].get().split(';') if opt.strip()]
+                new_options.append(opts)
+                new_answers.append(data['answer_var'].get())
+            
+            question['options_for_blanks'] = new_options
+            question['answers'] = new_answers
+            messagebox.showinfo("Success! 💖", "Dropdown question saved perfectly, darling!")
+            # We need to refresh the blanks to update the dropdowns with any new options
+            refresh_blanks()
+
+        refresh_parts()
+        refresh_blanks()
+
+        # --- Buttons Section ---
+        btn_frame = tk.Frame(main_editor_frame, bg=self.colors['white'])
+        btn_frame.pack(fill=tk.X, pady=10)
+
+        tk.Button(btn_frame, text="➕ Add Part", command=add_part,
+                 bg=self.colors['button'], fg=self.colors['button_text']).pack(side=tk.LEFT, padx=5)
+        tk.Button(btn_frame, text="➕ Add Blank", command=add_blank,
+                 bg=self.colors['button'], fg=self.colors['button_text']).pack(side=tk.LEFT, padx=5)
+        tk.Button(btn_frame, text="💾 Save Everything", command=save_all,
+                 bg=self.colors['accent'], fg=self.colors['button_text'], font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=5)
 
     def edit_match_phrases(self, question, index):
         """Editor for match_phrases questions - match those cute phrases! 🔗"""
