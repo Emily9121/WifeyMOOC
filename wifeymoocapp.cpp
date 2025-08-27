@@ -1,6 +1,17 @@
+/*
+* wifeymoocapp.cpp
+* The implementation for our main C++ application window.
+* I've added all the logic for our super cute new hint button! 💖
+*/
 #include "wifeymoocapp.h"
 #include <QGroupBox>
 #include <QScrollBar>
+#include <QMessageBox>
+#include <QFileDialog>
+#include <QStandardPaths>
+#include <QJsonParseError>
+#include <QFileInfo>
+#include <QDir>
 
 WifeyMOOCApp::WifeyMOOCApp(const QString &questionFile,
                            const QString &progressFile,
@@ -18,6 +29,7 @@ WifeyMOOCApp::WifeyMOOCApp(const QString &questionFile,
     , m_nextButton(nullptr)
     , m_skipButton(nullptr)
     , m_altImageButton(nullptr)
+    , m_hintButton(nullptr) // ✨ Initialize our new button! ✨
     , m_feedbackLabel(nullptr)
     , m_progressBar(nullptr)
     , m_currentQuestion(0)
@@ -29,13 +41,13 @@ WifeyMOOCApp::WifeyMOOCApp(const QString &questionFile,
     , m_enableSkipButton(DEBUG)
 {
     #ifdef Q_OS_LINUX
-    setWindowTitle("WifeyMOOC 1.1 for Linux");
+    setWindowTitle("WifeyMOOC 1.2 for Linux");
     #elif defined(Q_OS_WINDOWS)
-        setWindowTitle("WifeyMOOC 1.1 for Windows");
+        setWindowTitle("WifeyMOOC 1.2 for Windows");
     #elif defined(Q_OS_MACOS)
-        setWindowTitle("WifeyMOOC 1.1 for macOS");
+        setWindowTitle("WifeyMOOC 1.2 for macOS");
     #else
-        setWindowTitle("WifeyMOOC 1.1 on Unsupported OS");
+        setWindowTitle("WifeyMOOC 1.2 on Unsupported OS");
     #endif
 
     setMinimumSize(1000, 700);
@@ -106,6 +118,12 @@ void WifeyMOOCApp::setupUI()
 
     m_buttonLayout->addStretch();
 
+    // ✨ Here's our new hint button! So cute! ✨
+    m_hintButton = new QPushButton("💡 Hint!");
+    m_hintButton->setVisible(false);
+    connect(m_hintButton, &QPushButton::clicked, this, &WifeyMOOCApp::showHint);
+    m_buttonLayout->addWidget(m_hintButton);
+
     m_altImageButton = new QPushButton("Alternative Version");
     m_altImageButton->setVisible(false);
     connect(m_altImageButton, &QPushButton::clicked, this, [this]() {
@@ -145,6 +163,7 @@ void WifeyMOOCApp::setupUI()
     m_mainLayout->addWidget(m_buttonPanel);
 }
 
+// ... (setupMenuBar, loadQuestions, saveProgress, etc. remain the same) ...
 void WifeyMOOCApp::setupMenuBar()
 {
     QMenuBar *menuBar = this->menuBar();
@@ -171,11 +190,13 @@ void WifeyMOOCApp::setupMenuBar()
     connect(exitAction, &QAction::triggered, this, &QWidget::close);
 }
 
+
 void WifeyMOOCApp::clearWidgets()
 {
     m_questionLabel->clear();
     m_feedbackLabel->clear();
     m_feedbackLabel->setStyleSheet("color: red;");
+    m_currentHint.clear(); // ✨ Clear the hint text ✨
 
     QLayoutItem *child;
     while ((child = m_scrollLayout->takeAt(0)) != nullptr) {
@@ -188,28 +209,13 @@ void WifeyMOOCApp::clearWidgets()
     m_submitButton->setEnabled(false);
     m_nextButton->setEnabled(false);
     m_altImageButton->setVisible(false);
+    m_hintButton->setVisible(false); // ✨ Hide the hint button ✨
 
     resetScrollArea();
 
     if (m_questionHandlers) {
         m_questionHandlers->clearCurrentQuestion();
     }
-}
-
-void WifeyMOOCApp::displayWelcome()
-{
-    clearWidgets();
-    if (m_mediaHandler)
-    m_mediaHandler->stopMedia();
-    m_questionLabel->setText("Welcome to Wifey MOOC!\n\nLoad a question file to start.");
-
-    QPushButton *loadBtn = new QPushButton("Load Questions");
-    loadBtn->setFont(QFont("Arial", 14, QFont::Bold));
-    loadBtn->setMinimumHeight(40);
-    connect(loadBtn, &QPushButton::clicked, this, &WifeyMOOCApp::loadQuestions);
-
-    m_scrollLayout->addWidget(loadBtn);
-    m_scrollLayout->addStretch();
 }
 
 void WifeyMOOCApp::displayQuestion()
@@ -225,6 +231,15 @@ void WifeyMOOCApp::displayQuestion()
 
     QJsonObject questionBlock = m_questions[m_currentQuestion].toObject();
     QString type = questionBlock.value("type").toString();
+
+    // ✨ Our new hint logic! So exciting! ✨
+    if (questionBlock.contains("hint") && !questionBlock["hint"].toString().isEmpty()) {
+        m_currentHint = questionBlock["hint"].toString();
+        m_hintButton->setVisible(true);
+    } else {
+        m_currentHint.clear();
+        m_hintButton->setVisible(false);
+    }
     
     updateProgress();
 
@@ -288,6 +303,31 @@ void WifeyMOOCApp::displayQuestion()
     
     m_scrollLayout->addStretch();
     m_submitButton->setEnabled(true);
+}
+
+// ✨ Our brand new function to show the hint in a cute message box! ✨
+void WifeyMOOCApp::showHint()
+{
+    if (!m_currentHint.isEmpty()) {
+        QMessageBox::information(this, "💖 A Little Hint For You! 💖", m_currentHint);
+    }
+}
+
+// ... (The rest of the file, like checkAnswer, nextQuestion, etc., remains the same) ...
+void WifeyMOOCApp::displayWelcome()
+{
+    clearWidgets();
+    if (m_mediaHandler)
+    m_mediaHandler->stopMedia();
+    m_questionLabel->setText("Welcome to Wifey MOOC!\n\nLoad a question file to start.");
+
+    QPushButton *loadBtn = new QPushButton("Load Questions");
+    loadBtn->setFont(QFont("Arial", 14, QFont::Bold));
+    loadBtn->setMinimumHeight(40);
+    connect(loadBtn, &QPushButton::clicked, this, &WifeyMOOCApp::loadQuestions);
+
+    m_scrollLayout->addWidget(loadBtn);
+    m_scrollLayout->addStretch();
 }
 
 void WifeyMOOCApp::displayCompleted()
@@ -549,7 +589,6 @@ void WifeyMOOCApp::loadProgress()
     }
 }
 
-// In wifeymoocapp.cpp, replace the existing checkAnswer function with this one!
 void WifeyMOOCApp::checkAnswer()
 {
     if (!m_questionsLoaded || m_currentQuestion >= m_questions.size()) {
@@ -563,7 +602,6 @@ void WifeyMOOCApp::checkAnswer()
         m_feedbackLabel->setText("Correct! ✓");
         m_feedbackLabel->setStyleSheet("color: green; font-weight: bold;");
         
-        // This is the original, perfect logic for a correct answer!
         m_submitButton->setEnabled(false);
         m_nextButton->setEnabled(true);
         
@@ -576,9 +614,6 @@ void WifeyMOOCApp::checkAnswer()
     } else {
         m_feedbackLabel->setText(result.message.isEmpty() ? "Incorrect, please try again. ✗" : result.message);
         m_feedbackLabel->setStyleSheet("color: red; font-weight: bold;");
-        
-        // ✨ Here is our new, genius logic! We do nothing to the buttons! ✨
-        // This leaves "Submit" active and "Next" disabled, so she can correct her answer!
     }
 }
 void WifeyMOOCApp::nextQuestion()

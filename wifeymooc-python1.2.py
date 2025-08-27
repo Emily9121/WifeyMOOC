@@ -156,6 +156,14 @@ class WifeyMOOCApp:
         )
         self.feedback_label.pack(side=tk.LEFT)
 
+        # ✨ Creating our new hint button! ✨
+        self.hint_button = tk.Button(
+            self.button_frame,
+            text="💡 Hint!",
+            command=self.show_hint
+        )
+        # We don't pack it yet, we'll show it when there's a hint!
+
         self.submit_button = tk.Button(
             self.button_frame,
             text="Submit Answer",
@@ -224,6 +232,12 @@ class WifeyMOOCApp:
         self.options_canvas.bind("<Button-4>", on_mousewheel)
         self.options_canvas.bind("<Button-5>", lambda e: self.options_canvas.yview_scroll(-1, "units"))
 
+    def show_hint(self):
+        """A cute function to show our hint in a messagebox! 💖"""
+        if self.current_hint:
+            messagebox.showinfo("💖 A Little Hint For You! 💖", self.current_hint)
+
+
     def clear_widgets(self):
         self.question_label.config(text="")
         self.media_label.config(image="")
@@ -242,6 +256,7 @@ class WifeyMOOCApp:
         self.submit_button.config(state=tk.DISABLED)
         self.next_button.config(state=tk.DISABLED)
         self.alt_image_button.pack_forget()  # Hide alternative button
+        self.hint_button.pack_forget() # ✨ Make sure to hide it! ✨
         self.reset_options_canvas()
 
     def display_welcome(self):
@@ -324,6 +339,12 @@ class WifeyMOOCApp:
             return
 
         question_block = self.questions[self.current_question]
+        # ✨ Our new logic to show or hide the hint button! ✨
+        self.current_hint = question_block.get('hint', '')
+        if self.current_hint:
+            self.hint_button.pack(side=tk.LEFT, padx=10, pady=10)
+        else:
+            self.hint_button.pack_forget()
         qtype = question_block.get('type')
 
         # NEW: Handle multi_questions type

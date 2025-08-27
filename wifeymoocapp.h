@@ -69,6 +69,8 @@ private slots:
     void nextQuestion();
     void skipQuestion();
     void showFullImage(const QString &imagePath);
+    void showHint(); // ✨ Our new slot for showing the hint! ✨
+
 
 protected:
     void closeEvent(QCloseEvent *event) override;
@@ -102,6 +104,7 @@ private:
     QPushButton *m_nextButton;
     QPushButton *m_skipButton;  // Debug button
     QPushButton *m_altImageButton;  // For image_tagging alternatives
+    QPushButton *m_hintButton; // ✨ Our brand new hint button! ✨
     QLabel *m_feedbackLabel;
     QProgressBar *m_progressBar;
     
@@ -113,6 +116,7 @@ private:
     QString m_currentQuestionFile;
     QString m_progressFile;
     QString m_jsonDir;
+    QString m_currentHint; // ✨ To store the hint text! ✨
     
     // Question handlers
     QuestionHandlers *m_questionHandlers;
