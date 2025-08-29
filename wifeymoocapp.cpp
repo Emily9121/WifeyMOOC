@@ -12,6 +12,9 @@
 #include <QJsonParseError>
 #include <QFileInfo>
 #include <QDir>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
 
 WifeyMOOCApp::WifeyMOOCApp(const QString &questionFile,
                            const QString &progressFile,
@@ -29,8 +32,8 @@ WifeyMOOCApp::WifeyMOOCApp(const QString &questionFile,
     , m_nextButton(nullptr)
     , m_skipButton(nullptr)
     , m_altImageButton(nullptr)
-    , m_hintButton(nullptr) // ✨ Initialize our new button! ✨
-    , m_lessonButton(nullptr) // ✨ ADD THIS LINE ✨
+    , m_hintButton(nullptr) 
+    , m_lessonButton(nullptr)
     , m_feedbackLabel(nullptr)
     , m_progressBar(nullptr)
     , m_currentQuestion(0)
@@ -119,18 +122,15 @@ void WifeyMOOCApp::setupUI()
 
     m_buttonLayout->addStretch();
 
-    // ✨ Here's our new hint button! So cute! ✨
     m_hintButton = new QPushButton("💡 Hint!");
     m_hintButton->setVisible(false);
     connect(m_hintButton, &QPushButton::clicked, this, &WifeyMOOCApp::showHint);
     m_buttonLayout->addWidget(m_hintButton);
 
-    // ✨ START of ADDED CODE ✨
     m_lessonButton = new QPushButton("📚 View Lesson");
     m_lessonButton->setVisible(false);
     connect(m_lessonButton, &QPushButton::clicked, this, &WifeyMOOCApp::viewLessonPdf);
     m_buttonLayout->addWidget(m_lessonButton);
-    // ✨ END of ADDED CODE ✨
 
     m_altImageButton = new QPushButton("Alternative Version");
     m_altImageButton->setVisible(false);
@@ -171,7 +171,6 @@ void WifeyMOOCApp::setupUI()
     m_mainLayout->addWidget(m_buttonPanel);
 }
 
-// ... (setupMenuBar, loadQuestions, saveProgress, etc. remain the same) ...
 void WifeyMOOCApp::setupMenuBar()
 {
     QMenuBar *menuBar = this->menuBar();
@@ -204,8 +203,8 @@ void WifeyMOOCApp::clearWidgets()
     m_questionLabel->clear();
     m_feedbackLabel->clear();
     m_feedbackLabel->setStyleSheet("color: red;");
-    m_currentHint.clear(); // ✨ Clear the hint text ✨
-    m_currentLessonPdfPath.clear(); // ✨ ADD THIS LINE 
+    m_currentHint.clear();
+    m_currentLessonPdfPath.clear(); // ✨ ADDED: Clear the PDF path too! ✨
 
     QLayoutItem *child;
     while ((child = m_scrollLayout->takeAt(0)) != nullptr) {
@@ -218,8 +217,8 @@ void WifeyMOOCApp::clearWidgets()
     m_submitButton->setEnabled(false);
     m_nextButton->setEnabled(false);
     m_altImageButton->setVisible(false);
-    m_hintButton->setVisible(false); // ✨ Hide the hint button ✨
-    m_lessonButton->setVisible(false); // ✨ ADD THIS LINE ✨
+    m_hintButton->setVisible(false);
+    m_lessonButton->setVisible(false); // ✨ ADDED: Hide the lesson button! ✨
 
     resetScrollArea();
 
@@ -243,8 +242,7 @@ void WifeyMOOCApp::displayQuestion()
     QString type = questionBlock.value("type").toString();
 
 
-    // ✨ REPLACE the hint logic with this new block ✨
-    // Handle Hint
+    // ✨ ADDED: Handle Hint and Lesson PDF logic here! ✨
     if (questionBlock.contains("hint") && !questionBlock["hint"].toString().isEmpty()) {
         m_currentHint = questionBlock["hint"].toString();
         m_hintButton->setVisible(true);
@@ -252,8 +250,7 @@ void WifeyMOOCApp::displayQuestion()
         m_currentHint.clear();
         m_hintButton->setVisible(false);
     }
-
-    // Handle Lesson PDF
+    
     if (questionBlock.contains("lesson")) {
         QJsonObject lessonObj = questionBlock["lesson"].toObject();
         if (lessonObj.contains("pdf") && !lessonObj["pdf"].toString().isEmpty()) {
@@ -265,7 +262,7 @@ void WifeyMOOCApp::displayQuestion()
     } else {
         m_lessonButton->setVisible(false);
     }
-    // ✨ END of REPLACEMENT ✨
+    // ✨ END OF ADDED LOGIC ✨
     
     updateProgress();
 
@@ -331,7 +328,6 @@ void WifeyMOOCApp::displayQuestion()
     m_submitButton->setEnabled(true);
 }
 
-// ✨ Our brand new function to show the hint in a cute message box! ✨
 void WifeyMOOCApp::showHint()
 {
     if (!m_currentHint.isEmpty()) {
@@ -339,7 +335,6 @@ void WifeyMOOCApp::showHint()
     }
 }
 
-// ✨ ADD THIS NEW FUNCTION ✨
 void WifeyMOOCApp::viewLessonPdf()
 {
     if (!m_currentLessonPdfPath.isEmpty() && QFileInfo::exists(m_currentLessonPdfPath)) {
@@ -349,7 +344,6 @@ void WifeyMOOCApp::viewLessonPdf()
     }
 }
 
-// ... (The rest of the file, like checkAnswer, nextQuestion, etc., remains the same) ...
 void WifeyMOOCApp::displayWelcome()
 {
     clearWidgets();
@@ -412,7 +406,8 @@ void WifeyMOOCApp::displayCompleted()
     
     if (totalQuestions > 0) {
         m_progressBar->setVisible(true);
-        m_progressBar->setValue((m_score * 100) / totalQuestions);
+        m_progressBar->setMaximum(m_questions.size());
+        m_progressBar->setValue(m_currentQuestion);
         m_progressBar->setFormat(QString("Final Score: %1/%2").arg(m_score).arg(totalQuestions));
     }
 }
@@ -503,7 +498,7 @@ bool WifeyMOOCApp::loadProgressFromFile(const QString &filePath)
 
 bool WifeyMOOCApp::saveProgressToFile(const QString &filePath)
 {
-    if (m_currentQuestionFile.isEmpty()) {
+    if (!m_questionsLoaded) {
         QMessageBox::warning(this, "Save Progress", "No quiz loaded.");
         return false;
     }

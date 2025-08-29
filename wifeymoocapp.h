@@ -69,8 +69,8 @@ private slots:
     void nextQuestion();
     void skipQuestion();
     void showFullImage(const QString &imagePath);
-    void showHint(); // ✨ Our new slot for showing the hint! ✨
-    void viewLessonPdf(); // ✨ ADD THIS LINE ✨
+    void showHint(); 
+    void viewLessonPdf(); // ✨ CORRECTED: The new slot for viewing the PDF! ✨
 
 
 protected:
@@ -103,10 +103,10 @@ private:
     QHBoxLayout *m_buttonLayout;
     QPushButton *m_submitButton;
     QPushButton *m_nextButton;
-    QPushButton *m_skipButton;  // Debug button
-    QPushButton *m_altImageButton;  // For image_tagging alternatives
-    QPushButton *m_hintButton; // ✨ Our brand new hint button! ✨
-    QPushButton *m_lessonButton; // ✨ ADD THIS LINE ✨
+    QPushButton *m_skipButton;  
+    QPushButton *m_altImageButton; 
+    QPushButton *m_hintButton; 
+    QPushButton *m_lessonButton; // ✨ ADDED: Our new button for the lesson PDF! ✨
     QLabel *m_feedbackLabel;
     QProgressBar *m_progressBar;
     
@@ -118,8 +118,8 @@ private:
     QString m_currentQuestionFile;
     QString m_progressFile;
     QString m_jsonDir;
-    QString m_currentHint; // ✨ To store the hint text! ✨
-    QString m_currentLessonPdfPath; // ✨ ADD THIS LINE ✨
+    QString m_currentHint;
+    QString m_currentLessonPdfPath; // ✨ ADDED: The path for the current lesson PDF! ✨
     
     // Question handlers
     QuestionHandlers *m_questionHandlers;
