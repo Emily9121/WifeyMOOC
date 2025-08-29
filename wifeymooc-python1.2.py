@@ -1,12 +1,14 @@
 import argparse
 import tkinter as tk
-from tkinter import filedialog, messagebox, ttk
+from tkinter import filedialog, messagebox, ttk, simpledialog
 from PIL import Image, ImageTk
 import json
 import os
 import subprocess
 import platform
 import random
+import xml.etree.ElementTree as ET 
+import datetime
 
 # Constants
 DEBUG = True # Print debug info for image tagging
@@ -22,6 +24,137 @@ FONT_TAG = ("Arial", 14, "bold")
 FONT_FEEDBACK = ("Arial", 12)
 CANVAS_MIN_WIDTH = 200
 CANVAS_MIN_HEIGHT = 200
+
+class ParleyParser:
+    """A magical little parser to read words from .kvtml files!"""
+    def __init__(self):
+        self.cards = []
+        self.title = ""
+
+    def load_file(self, file_path):
+        try:
+            tree = ET.parse(file_path)
+            root = tree.getroot()
+            self.title = root.findtext('.//information/title', 'Flashcards')
+            
+            for entry in root.findall('.//entries/entry'):
+                card_id = entry.get('id')
+                front = entry.findtext('.//translation[@id="0"]/text')
+                back = entry.findtext('.//translation[@id="1"]/text')
+                if card_id is not None and front and back:
+                    self.cards.append({'id': card_id, 'front': front, 'back': back})
+            return True
+        except Exception as e:
+            print(f"Oh no! Error parsing Parley file: {e}")
+            return False
+
+class FlashcardSession:
+    """The super-smart brain that remembers Sierra's progress!"""
+    def __init__(self, all_cards, parley_file_path):
+        self.all_cards = all_cards
+        self.progress_map = {}
+        self.session_queue = []
+        self.original_session_queue = []
+        self.current_card = None
+        
+        # Create the cute little progress diary path
+        base_name = os.path.splitext(os.path.basename(parley_file_path))[0]
+        dir_name = os.path.dirname(parley_file_path)
+        self.progress_file_path = os.path.join(dir_name, f"{base_name}.progress.json")
+        
+        self.leitner_intervals = {1: 1, 2: 3, 3: 7, 4: 14, 5: 30}
+        self.max_box = 5
+        
+        self.load_progress()
+        self.save_progress()
+
+    def load_progress(self):
+        if os.path.exists(self.progress_file_path):
+            with open(self.progress_file_path, 'r', encoding='utf-8') as f:
+                progress_data = json.load(f)
+                for p_data in progress_data:
+                    self.progress_map[p_data['id']] = p_data
+        
+        # Make sure every card has a progress entry
+        for card in self.all_cards:
+            if card['id'] not in self.progress_map:
+                self.progress_map[card['id']] = {
+                    'id': card['id'],
+                    'front': card['front'],
+                    'back': card['back'],
+                    'box': 1,
+                    'reviewDate': (datetime.datetime.now() - datetime.timedelta(days=1)).isoformat(),
+                    'attempts': []
+                }
+
+    def save_progress(self):
+        with open(self.progress_file_path, 'w', encoding='utf-8') as f:
+            json.dump(list(self.progress_map.values()), f, indent=4)
+
+    def start_session(self, session_size):
+        self.session_queue = []
+        priority_queue = []
+        random_queue = []
+        now = datetime.datetime.now()
+
+        for card in self.all_cards:
+            progress = self.progress_map[card['id']]
+            review_date = datetime.datetime.fromisoformat(progress['reviewDate'])
+            if review_date <= now:
+                if progress['box'] == 1:
+                    priority_queue.append(card)
+                else:
+                    random_queue.append(card)
+        
+        # Sort priority cards by number of failures
+        priority_queue.sort(key=lambda c: sum(1 for a in self.progress_map[c['id']]['attempts'] if not a['correct']), reverse=True)
+        
+        # Shuffle the random pile!
+        random.shuffle(random_queue)
+
+        self.session_queue = priority_queue + random_queue
+        
+        if len(self.session_queue) > session_size:
+            self.session_queue = self.session_queue[:session_size]
+        
+        self.original_session_queue = self.session_queue.copy()
+
+    def get_next_card(self):
+        if not self.session_queue:
+            self.current_card = None
+            self.save_progress()
+            return None
+        self.current_card = self.session_queue.pop(0)
+        return self.current_card
+
+    def record_answer(self, was_correct):
+        if not self.current_card:
+            return
+            
+        progress = self.progress_map[self.current_card['id']]
+        
+        # Record the attempt!
+        progress['attempts'].append({
+            'date': datetime.datetime.now().isoformat(),
+            'correct': was_correct
+        })
+
+        if was_correct:
+            progress['box'] = min(progress['box'] + 1, self.max_box)
+        else:
+            progress['box'] = 1
+        
+        review_delta = datetime.timedelta(days=self.leitner_intervals[progress['box']])
+        progress['reviewDate'] = (datetime.datetime.now() + review_delta).isoformat()
+        
+    def cards_remaining(self):
+        return len(self.session_queue)
+
+    def total_session_cards(self):
+        return len(self.original_session_queue)
+
+# --- The Main App, now with Flashcard Powers! ---
+
 
 class WifeyMOOCApp:
     def __init__(self, root, question_file=None, progress_file=None):
@@ -46,6 +179,12 @@ class WifeyMOOCApp:
         
         # Image tagging support
         self.image_tagging_alt_idx = 0
+
+        # Parley support
+        # --- ✨ New Flashcard state variables! ✨ ---
+        self.flashcard_session = None
+        self.is_flashcard_mode = False
+        self.is_card_flipped = False
         
         self.create_menu()
         self.create_widgets()
@@ -59,6 +198,7 @@ class WifeyMOOCApp:
 
     # ✨ REPLACE the entire load_questions_from_file method with this ✨
     def load_questions_from_file(self, file_path):
+        if self.is_flashcard_mode: self.switch_to_quiz_mode() # <-- Add this line!
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
@@ -112,10 +252,28 @@ class WifeyMOOCApp:
         menubar = tk.Menu(self.root)
         filemenu = tk.Menu(menubar, tearoff=0)
         filemenu.add_command(label="Load Questions", command=self.load_questions)
+        filemenu.add_command(label="Load Parley Flashcards...", command=self.open_parley_file)
         filemenu.add_command(label="Save Progress", command=self.save_progress)
         filemenu.add_command(label="Load Progress", command=self.load_progress)
         menubar.add_cascade(label="File", menu=filemenu)
         self.root.config(menu=menubar)
+
+        # --- ✨ UI Switching Magic! ✨ ---
+
+    def switch_to_quiz_mode(self):
+        """Destroys any existing UI and builds the quiz UI from scratch."""
+        if hasattr(self, 'container') and self.container.winfo_exists():
+            self.container.destroy()
+        self.is_flashcard_mode = False
+        self.root.title("Wifey MOOC")
+        self.create_widgets() # This rebuilds your quiz UI
+
+    def switch_to_flashcard_mode(self):
+        """Destroys any existing UI and builds the flashcard UI."""
+        if hasattr(self, 'container') and self.container.winfo_exists():
+            self.container.destroy()
+        self.is_flashcard_mode = True
+        self.setup_flashcard_ui()
 
     def create_widgets(self):
         self.container = tk.Frame(self.root)
@@ -279,7 +437,93 @@ class WifeyMOOCApp:
         self.lesson_button.pack_forget() # ✨ ADD THIS LINE ✨
         self.reset_options_canvas()
 
+    def open_parley_file(self):
+        file_path = filedialog.askopenfilename(filetypes=[("Parley Files", "*.kvtml")])
+        if not file_path:
+            return
+
+        parser = ParleyParser()
+        if not parser.load_file(file_path):
+            messagebox.showerror("Error", "Oh no! Could not parse the Parley file.")
+            return
+
+        session_size = simpledialog.askinteger("Session Size", "How many cards for today's session? 💖", initialvalue=20, minvalue=1, maxvalue=1000)
+        if session_size is None:
+            return
+
+        self.flashcard_session = FlashcardSession(parser.cards, file_path)
+        self.flashcard_session.start_session(session_size)
+        self.is_flashcard_mode = True
+        self.root.title(f"Flashcards! - {parser.title}")
+        self.switch_to_flashcard_mode()
+        self.show_next_card()
+
+    def setup_flashcard_ui(self):
+        # This new version builds the flashcard UI in a brand new container!
+        self.container = tk.Frame(self.root)
+        self.container.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        
+        self.fc_progress_label = tk.Label(self.container, text="", font=("Arial", 12))
+        self.fc_progress_label.pack(pady=10)
+
+        self.fc_card_label = tk.Label(self.container, text="", font=("Arial", 24), wraplength=700, borderwidth=2, relief="solid", padx=20, pady=20)
+        self.fc_card_label.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+
+        self.fc_flip_button = tk.Button(self.container, text="Flip Me! ✨", command=self.flip_card)
+        self.fc_flip_button.pack(pady=10)
+
+        self.answer_frame = tk.Frame(self.container)
+        self.fc_correct_button = tk.Button(self.answer_frame, text="I knew it! 😊", command=self.on_correct)
+        self.fc_incorrect_button = tk.Button(self.answer_frame, text="Oops, try again! 🤔", command=self.on_incorrect)
+        self.fc_correct_button.pack(side=tk.LEFT, padx=10)
+        self.fc_incorrect_button.pack(side=tk.RIGHT, padx=10)
+
+    def show_next_card(self):
+        card = self.flashcard_session.get_next_card()
+        self.is_card_flipped = False
+        if card:
+            self.update_flashcard_ui()
+        else:
+            self.fc_card_label.config(text="Yay, session complete! 🎉")
+            self.fc_flip_button.pack_forget()
+            self.answer_frame.pack_forget()
+            self.fc_progress_label.config(text="You're a star! 🌟")
+
+    def update_flashcard_ui(self):
+        card = self.flashcard_session.current_card
+        if not card: return
+
+        self.fc_card_label.config(text=card['back'] if self.is_card_flipped else card['front'])
+        
+        if self.is_card_flipped:
+            self.fc_flip_button.pack_forget()
+            self.answer_frame.pack(pady=10)
+        else:
+            self.fc_flip_button.pack(pady=10)
+            self.answer_frame.pack_forget()
+            
+        total = self.flashcard_session.total_session_cards()
+        current_num = total - self.flashcard_session.cards_remaining() - (1 if self.flashcard_session.current_card else 0)
+        if total > 0:
+            self.fc_progress_label.config(text=f"Card {current_num} of {total}")
+        else:
+            self.fc_progress_label.config(text="No cards due for review today!")
+
+    def flip_card(self):
+        self.is_card_flipped = True
+        self.update_flashcard_ui()
+
+    def on_correct(self):
+        self.flashcard_session.record_answer(True)
+        self.show_next_card()
+
+    def on_incorrect(self):
+        self.flashcard_session.record_answer(False)
+        self.show_next_card()
+
+
     def display_welcome(self):
+        if self.is_flashcard_mode: self.switch_to_quiz_mode() # <-- And add this line here too!
         self.clear_widgets()
         self.question_label.config(text="Welcome to Wifey MOOC! Load a question file to start.")
 

@@ -5,7 +5,7 @@ project(WifeyMOOC VERSION 1.0.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets Multimedia MultimediaWidgets Network)
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets Multimedia MultimediaWidgets Network Xml)
 
 qt_standard_project_setup()
 
@@ -15,6 +15,9 @@ set(SOURCES
     questionhandlers.cpp
     mediahandler.cpp
     droptag.cpp
+    parleyparser.cpp
+    flashcardsession.cpp
+    flashcardwidget.cpp
 )
 
 set(HEADERS
@@ -22,6 +25,9 @@ set(HEADERS
     questionhandlers.h
     mediahandler.h
     droptag.h
+    parleyparser.h
+    flashcardsession.h
+    flashcardwidget.h
 )
 
 qt_add_executable(WifeyMOOC ${SOURCES} ${HEADERS})
@@ -37,6 +43,7 @@ target_link_libraries(
     Qt6::Multimedia
     Qt6::MultimediaWidgets
     Qt6::Network
+    Qt6::Xml
 )
 
 # Copy resources to build directory

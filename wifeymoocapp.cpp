@@ -2,6 +2,7 @@
 * wifeymoocapp.cpp
 * The implementation for our main C++ application window.
 * I've added all the logic for our super cute new hint button! 💖
+* This version is corrected to remove all the duplicate functions!
 */
 #include "wifeymoocapp.h"
 #include <QGroupBox>
@@ -15,6 +16,11 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
+#include "parleyparser.h"
+#include "flashcardwidget.h"
+#include <QInputDialog>
+#include <QDebug>
+
 
 WifeyMOOCApp::WifeyMOOCApp(const QString &questionFile,
                            const QString &progressFile,
@@ -79,6 +85,7 @@ WifeyMOOCApp::WifeyMOOCApp(const QString &questionFile,
 
 WifeyMOOCApp::~WifeyMOOCApp()
 {
+    delete m_flashcardSession;
 }
 
 void WifeyMOOCApp::setupUI()
@@ -181,6 +188,9 @@ void WifeyMOOCApp::setupMenuBar()
     loadQuestionsAction->setShortcut(QKeySequence::Open);
     connect(loadQuestionsAction, &QAction::triggered, this, &WifeyMOOCApp::loadQuestions);
 
+    QAction *loadParleyAction = fileMenu->addAction("Load &Parley Flashcards");
+    connect(loadParleyAction, &QAction::triggered, this, &WifeyMOOCApp::on_actionOpen_Parley_File_triggered);
+
     fileMenu->addSeparator();
 
     QAction *saveProgressAction = fileMenu->addAction("&Save Progress");
@@ -204,7 +214,7 @@ void WifeyMOOCApp::clearWidgets()
     m_feedbackLabel->clear();
     m_feedbackLabel->setStyleSheet("color: red;");
     m_currentHint.clear();
-    m_currentLessonPdfPath.clear(); // ✨ ADDED: Clear the PDF path too! ✨
+    m_currentLessonPdfPath.clear();
 
     QLayoutItem *child;
     while ((child = m_scrollLayout->takeAt(0)) != nullptr) {
@@ -218,7 +228,7 @@ void WifeyMOOCApp::clearWidgets()
     m_nextButton->setEnabled(false);
     m_altImageButton->setVisible(false);
     m_hintButton->setVisible(false);
-    m_lessonButton->setVisible(false); // ✨ ADDED: Hide the lesson button! ✨
+    m_lessonButton->setVisible(false);
 
     resetScrollArea();
 
@@ -241,8 +251,6 @@ void WifeyMOOCApp::displayQuestion()
     QJsonObject questionBlock = m_questions[m_currentQuestion].toObject();
     QString type = questionBlock.value("type").toString();
 
-
-    // ✨ ADDED: Handle Hint and Lesson PDF logic here! ✨
     if (questionBlock.contains("hint") && !questionBlock["hint"].toString().isEmpty()) {
         m_currentHint = questionBlock["hint"].toString();
         m_hintButton->setVisible(true);
@@ -262,7 +270,6 @@ void WifeyMOOCApp::displayQuestion()
     } else {
         m_lessonButton->setVisible(false);
     }
-    // ✨ END OF ADDED LOGIC ✨
     
     updateProgress();
 
@@ -412,8 +419,52 @@ void WifeyMOOCApp::displayCompleted()
     }
 }
 
+void WifeyMOOCApp::restoreQuizUI() {
+    if (centralWidget() != m_centralWidget) {
+        delete centralWidget();
+        setCentralWidget(m_centralWidget);
+    }
+}
+
+void WifeyMOOCApp::on_actionOpen_Parley_File_triggered()
+{
+    QString filePath = QFileDialog::getOpenFileName(this, "Open Parley File", "", "Parley Files (*.kvtml)");
+    if (!filePath.isEmpty()) {
+        loadParleyFile(filePath);
+    }
+}
+
+void WifeyMOOCApp::loadParleyFile(const QString& filePath)
+{
+    ParleyParser parser;
+    if (!parser.loadFile(filePath)) {
+        QMessageBox::critical(this, "Error", "Could not load the Parley file.");
+        return;
+    }
+
+    bool ok;
+    int sessionSize = QInputDialog::getInt(this, "Flashcard Session", "How many cards for today's session? 💖", 20, 1, 1000, 1, &ok);
+
+    if (ok) {
+        delete m_flashcardSession;
+        
+        m_flashcardSession = new FlashcardSession(parser.getCards(), filePath, this);
+        m_flashcardSession->startSession(sessionSize);
+
+        FlashcardWidget* flashcardWidget = new FlashcardWidget(m_flashcardSession);
+        
+        if (centralWidget()) {
+            centralWidget()->deleteLater();
+        }
+        setCentralWidget(flashcardWidget);
+        setWindowTitle("Flashcards! - " + parser.getTitle());
+    }
+}
+
 bool WifeyMOOCApp::loadQuestionsFromFile(const QString &filePath)
 {
+    restoreQuizUI();
+
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly)) {
         QMessageBox::critical(this, "Error", 
@@ -444,6 +495,7 @@ bool WifeyMOOCApp::loadQuestionsFromFile(const QString &filePath)
     m_questionsLoaded = true;
     
     displayQuestion();
+    setWindowTitle("WifeyMOOC");
     return true;
 }
 

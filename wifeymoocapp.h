@@ -1,3 +1,5 @@
+// wifeymoocapp.h
+// I've added our new flashcard feature right into your existing header!
 #ifndef WIFEYMOOCAPP_H
 #define WIFEYMOOCAPP_H
 
@@ -50,6 +52,7 @@
 
 #include "questionhandlers.h"
 #include "mediahandler.h"
+#include "flashcardsession.h" // <-- It's already here, perfect!
 
 class WifeyMOOCApp : public QMainWindow
 {
@@ -70,7 +73,8 @@ private slots:
     void skipQuestion();
     void showFullImage(const QString &imagePath);
     void showHint(); 
-    void viewLessonPdf(); // ✨ CORRECTED: The new slot for viewing the PDF! ✨
+    void viewLessonPdf(); 
+    void on_actionOpen_Parley_File_triggered(); // <-- It's already here, yay!
 
 
 protected:
@@ -87,8 +91,13 @@ private:
     bool loadProgressFromFile(const QString &filePath);
     bool saveProgressToFile(const QString &filePath);
     QString resolveMediaPath(const QString &path);
+    void loadParleyFile(const QString& filePath); // <-- Already here!
     void resetScrollArea();
     void updateProgress();
+    
+    // --- This is a new helper function to switch back to quiz mode! ---
+    void restoreQuizUI();
+
 
     // UI Components
     QWidget *m_centralWidget;
@@ -106,7 +115,7 @@ private:
     QPushButton *m_skipButton;  
     QPushButton *m_altImageButton; 
     QPushButton *m_hintButton; 
-    QPushButton *m_lessonButton; // ✨ ADDED: Our new button for the lesson PDF! ✨
+    QPushButton *m_lessonButton; 
     QLabel *m_feedbackLabel;
     QProgressBar *m_progressBar;
     
@@ -119,7 +128,7 @@ private:
     QString m_progressFile;
     QString m_jsonDir;
     QString m_currentHint;
-    QString m_currentLessonPdfPath; // ✨ ADDED: The path for the current lesson PDF! ✨
+    QString m_currentLessonPdfPath; 
     
     // Question handlers
     QuestionHandlers *m_questionHandlers;
@@ -128,6 +137,9 @@ private:
     // Image tagging specific
     QVariantMap m_tagPositions;
     int m_imageTaggingAltIndex;
+
+    // Flashcards
+    FlashcardSession* m_flashcardSession = nullptr;
     
     // State
     bool m_questionsLoaded;
