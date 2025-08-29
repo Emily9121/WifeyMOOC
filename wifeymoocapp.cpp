@@ -51,13 +51,13 @@ WifeyMOOCApp::WifeyMOOCApp(const QString &questionFile,
     , m_enableSkipButton(DEBUG)
 {
     #ifdef Q_OS_LINUX
-    setWindowTitle("WifeyMOOC 1.2 for Linux");
+    setWindowTitle("WifeyMOOC 2.0 for Linux");
     #elif defined(Q_OS_WINDOWS)
-        setWindowTitle("WifeyMOOC 1.2 for Windows");
+        setWindowTitle("WifeyMOOC 2.0 for Windows");
     #elif defined(Q_OS_MACOS)
-        setWindowTitle("WifeyMOOC 1.2 for macOS");
+        setWindowTitle("WifeyMOOC 2.0 for macOS");
     #else
-        setWindowTitle("WifeyMOOC 1.2 on Unsupported OS");
+        setWindowTitle("WifeyMOOC 2.0 on Unsupported OS");
     #endif
 
     setMinimumSize(1000, 700);
@@ -457,7 +457,7 @@ void WifeyMOOCApp::loadParleyFile(const QString& filePath)
             centralWidget()->deleteLater();
         }
         setCentralWidget(flashcardWidget);
-        setWindowTitle("Flashcards! - " + parser.getTitle());
+        setWindowTitle("WifeyMOOC 2.0 Flashcards! - " + parser.getTitle());
     }
 }
 
@@ -495,7 +495,7 @@ bool WifeyMOOCApp::loadQuestionsFromFile(const QString &filePath)
     m_questionsLoaded = true;
     
     displayQuestion();
-    setWindowTitle("WifeyMOOC");
+    setWindowTitle("WifeyMOOC 2.0");
     return true;
 }
 

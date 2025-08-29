@@ -1,4 +1,4 @@
-# WifeyMOOC 1.2.0
+# WifeyMOOC 2.0.0
 
 App used for language learning, due to how it came to exist, no maintenance is promised even for massive bugs, don't complain to me if it kill your guinea pig or something.
 
@@ -17,3 +17,5 @@ Changelog:
 1.1.0 - Added support for images in mqc_single/mqc_multiple and added a handy multi_questions block, also improved debug messgaes for image_tagging - due to the usage of a different clanker and some apparently significant code change, it is 1.1 and not 1.0.5. - also added testfile-complete.json to check every question type quickly.
 
 1.2.0 - Added the python version to the public repository - Added support for hint in the json file!
+
+2.0.0 - Added support for lesson files, added support to read Plasma's Parley file as flashcards, probably last feature version.
