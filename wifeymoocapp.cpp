@@ -30,6 +30,7 @@ WifeyMOOCApp::WifeyMOOCApp(const QString &questionFile,
     , m_skipButton(nullptr)
     , m_altImageButton(nullptr)
     , m_hintButton(nullptr) // ✨ Initialize our new button! ✨
+    , m_lessonButton(nullptr) // ✨ ADD THIS LINE ✨
     , m_feedbackLabel(nullptr)
     , m_progressBar(nullptr)
     , m_currentQuestion(0)
@@ -124,6 +125,13 @@ void WifeyMOOCApp::setupUI()
     connect(m_hintButton, &QPushButton::clicked, this, &WifeyMOOCApp::showHint);
     m_buttonLayout->addWidget(m_hintButton);
 
+    // ✨ START of ADDED CODE ✨
+    m_lessonButton = new QPushButton("📚 View Lesson");
+    m_lessonButton->setVisible(false);
+    connect(m_lessonButton, &QPushButton::clicked, this, &WifeyMOOCApp::viewLessonPdf);
+    m_buttonLayout->addWidget(m_lessonButton);
+    // ✨ END of ADDED CODE ✨
+
     m_altImageButton = new QPushButton("Alternative Version");
     m_altImageButton->setVisible(false);
     connect(m_altImageButton, &QPushButton::clicked, this, [this]() {
@@ -197,6 +205,7 @@ void WifeyMOOCApp::clearWidgets()
     m_feedbackLabel->clear();
     m_feedbackLabel->setStyleSheet("color: red;");
     m_currentHint.clear(); // ✨ Clear the hint text ✨
+    m_currentLessonPdfPath.clear(); // ✨ ADD THIS LINE 
 
     QLayoutItem *child;
     while ((child = m_scrollLayout->takeAt(0)) != nullptr) {
@@ -210,6 +219,7 @@ void WifeyMOOCApp::clearWidgets()
     m_nextButton->setEnabled(false);
     m_altImageButton->setVisible(false);
     m_hintButton->setVisible(false); // ✨ Hide the hint button ✨
+    m_lessonButton->setVisible(false); // ✨ ADD THIS LINE ✨
 
     resetScrollArea();
 
@@ -232,7 +242,9 @@ void WifeyMOOCApp::displayQuestion()
     QJsonObject questionBlock = m_questions[m_currentQuestion].toObject();
     QString type = questionBlock.value("type").toString();
 
-    // ✨ Our new hint logic! So exciting! ✨
+
+    // ✨ REPLACE the hint logic with this new block ✨
+    // Handle Hint
     if (questionBlock.contains("hint") && !questionBlock["hint"].toString().isEmpty()) {
         m_currentHint = questionBlock["hint"].toString();
         m_hintButton->setVisible(true);
@@ -240,6 +252,20 @@ void WifeyMOOCApp::displayQuestion()
         m_currentHint.clear();
         m_hintButton->setVisible(false);
     }
+
+    // Handle Lesson PDF
+    if (questionBlock.contains("lesson")) {
+        QJsonObject lessonObj = questionBlock["lesson"].toObject();
+        if (lessonObj.contains("pdf") && !lessonObj["pdf"].toString().isEmpty()) {
+            m_currentLessonPdfPath = resolveMediaPath(lessonObj["pdf"].toString());
+            m_lessonButton->setVisible(QFileInfo::exists(m_currentLessonPdfPath));
+        } else {
+            m_lessonButton->setVisible(false);
+        }
+    } else {
+        m_lessonButton->setVisible(false);
+    }
+    // ✨ END of REPLACEMENT ✨
     
     updateProgress();
 
@@ -310,6 +336,16 @@ void WifeyMOOCApp::showHint()
 {
     if (!m_currentHint.isEmpty()) {
         QMessageBox::information(this, "💖 A Little Hint For You! 💖", m_currentHint);
+    }
+}
+
+// ✨ ADD THIS NEW FUNCTION ✨
+void WifeyMOOCApp::viewLessonPdf()
+{
+    if (!m_currentLessonPdfPath.isEmpty() && QFileInfo::exists(m_currentLessonPdfPath)) {
+        QDesktopServices::openUrl(QUrl::fromLocalFile(m_currentLessonPdfPath));
+    } else {
+        QMessageBox::warning(this, "Oopsie!", "The lesson PDF is missing or the path is incorrect, sweetie!");
     }
 }
 

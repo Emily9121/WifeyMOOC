@@ -38,6 +38,7 @@ class WifeyMOOCApp:
         self.tag_items = {} # For canvas tag items {tag_id: (rect_id, text_id)}
         self.drag_data = {"tag_id": None, "x": 0, "y": 0}
         self.last_focused_entry = None
+        self.lesson_pdf_path = None # ✨ ADD THIS LINE ✨
         
         # NEW: Multi-question support
         self.current_multi_question_widgets = {}
@@ -56,12 +57,23 @@ class WifeyMOOCApp:
         else:
             self.display_welcome()
 
+    # ✨ REPLACE the entire load_questions_from_file method with this ✨
     def load_questions_from_file(self, file_path):
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
-                self.questions = json.load(f)
+                data = json.load(f)
+
+            # Handle both old format (list) and new format (dict)
+            if isinstance(data, list):
+                self.questions = data
+            elif isinstance(data, dict):
+                self.questions = data.get("questions", [])
+            else:
+                messagebox.showerror("Error", "Invalid JSON format! Must be an array or an object with a 'questions' key.")
+                return
+
             self.current_question_file = file_path
-            self.json_dir = os.path.dirname(file_path) # Store the directory of the JSON file
+            self.json_dir = os.path.dirname(file_path)
             self.display_question()
         except Exception as e:
             messagebox.showerror("Error", f"Failed to load questions:\n{e}")
@@ -163,6 +175,13 @@ class WifeyMOOCApp:
             command=self.show_hint
         )
         # We don't pack it yet, we'll show it when there's a hint!
+        # ✨ START of ADDED CODE ✨
+        self.lesson_button = tk.Button(
+            self.button_frame,
+            text="📚 View Lesson",
+            command=self.view_lesson_pdf
+        )
+        # ✨ END of ADDED CODE ✨
 
         self.submit_button = tk.Button(
             self.button_frame,
@@ -257,6 +276,7 @@ class WifeyMOOCApp:
         self.next_button.config(state=tk.DISABLED)
         self.alt_image_button.pack_forget()  # Hide alternative button
         self.hint_button.pack_forget() # ✨ Make sure to hide it! ✨
+        self.lesson_button.pack_forget() # ✨ ADD THIS LINE ✨
         self.reset_options_canvas()
 
     def display_welcome(self):
@@ -331,6 +351,14 @@ class WifeyMOOCApp:
             )
             btn.pack(pady=2)
 
+    # ✨ ADD THIS NEW METHOD inside the WifeyMOOCApp class ✨
+    def view_lesson_pdf(self):
+        """A super smart function to open our lesson PDF! 📚"""
+        if self.lesson_pdf_path and os.path.exists(self.lesson_pdf_path):
+            self.launch_file(self.lesson_pdf_path)
+        else:
+            messagebox.showwarning("Oopsie!", "The lesson PDF is missing, sweetie!")
+
     def display_question(self):
         self.clear_widgets()
 
@@ -339,12 +367,27 @@ class WifeyMOOCApp:
             return
 
         question_block = self.questions[self.current_question]
-        # ✨ Our new logic to show or hide the hint button! ✨
+        # ✨ REPLACE the hint logic with this new block ✨
+        # Handle Hint
         self.current_hint = question_block.get('hint', '')
         if self.current_hint:
             self.hint_button.pack(side=tk.LEFT, padx=10, pady=10)
         else:
             self.hint_button.pack_forget()
+
+        # Handle Lesson PDF
+        lesson_info = question_block.get("lesson")
+        if lesson_info and "pdf" in lesson_info and lesson_info["pdf"]:
+            self.lesson_pdf_path = self.resolve_media_path(lesson_info["pdf"])
+            if os.path.exists(self.lesson_pdf_path):
+                self.lesson_button.pack(side=tk.LEFT, padx=10, pady=10)
+            else:
+                self.lesson_button.pack_forget()
+        else:
+            self.lesson_pdf_path = None
+            self.lesson_button.pack_forget()
+        # ✨ END of REPLACEMENT ✨
+
         qtype = question_block.get('type')
 
         # NEW: Handle multi_questions type
