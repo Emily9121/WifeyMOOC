@@ -19,6 +19,7 @@ private slots:
     void flipCard();
     void onCorrect();
     void onIncorrect();
+    void showHistory(); // A new slot for our new button!
 
 private:
     void showNextCard();
@@ -33,6 +34,7 @@ private:
     QPushButton* m_flipButton;
     QPushButton* m_correctButton;
     QPushButton* m_incorrectButton;
+    QPushButton* m_historyButton; // Our new button for history!
 };
 
 #endif // FLASHCARDWIDGET_H

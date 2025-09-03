@@ -39,6 +39,9 @@ public:
     void recordAnswer(bool wasCorrect);
     int cardsRemaining() const;
     int totalSessionCards() const;
+    
+    // The missing method!
+    const FlashcardProgress* getCardProgress(const QString& cardId) const;
 
 private:
     void loadProgress();

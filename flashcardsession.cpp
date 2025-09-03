@@ -169,3 +169,13 @@ int FlashcardSession::cardsRemaining() const {
 int FlashcardSession::totalSessionCards() const {
     return originalSessionQueue.size();
 }
+
+// Our missing piece!
+const FlashcardProgress* FlashcardSession::getCardProgress(const QString& cardId) const {
+    // We use a const iterator to avoid returning a pointer to a temporary value.
+    QMap<QString, FlashcardProgress>::const_iterator it = progressMap.find(cardId);
+    if (it != progressMap.end()) {
+        return &(*it);
+    }
+    return nullptr;
+}

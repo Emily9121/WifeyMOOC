@@ -86,7 +86,8 @@ A super cute sample exercise, A2-1-PrideAvecMaPetiteAmie.json, is included in th
 * **1.0.4** \- Fixed list\_pick and sequence\_audio question types. The AI clanker was lazy\!  
 * **1.1.0** \- Added image support for MCQs, a multi\_questions block, and improved debug messages.  
 * **1.2.0** \- Added the Python version and support for hints in JSON files.  
-* **2.0.0** \- (Current) Added support for lesson files and can now read Parley files as flashcards\! This is probably the last big feature version.
+* **2.0.0** \- Added support for lesson files and can now read Parley files as flashcards\! This is probably the last big feature version.
+* **2.0.0.0.1** \- (Current - Still displayed as 2.0.0) Clanker decided, without instruction, of it's own, that an history feature for the flashcard was a good idea, since it gave me all the working code for it I figured why not and added it.
 
 ## **📄 License**
 

@@ -3,6 +3,8 @@
 #include "flashcardwidget.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
+#include <QMessageBox>
+#include <QLocale> // <-- Add this include!
 
 FlashcardWidget::FlashcardWidget(FlashcardSession* session, QWidget *parent)
     : QWidget(parent), m_session(session), m_currentCard(nullptr), m_isFlipped(false) {
@@ -18,7 +20,8 @@ FlashcardWidget::FlashcardWidget(FlashcardSession* session, QWidget *parent)
 
     m_flipButton = new QPushButton("Flip Me! ✨");
     m_correctButton = new QPushButton("I knew it! 😊");
-    m_incorrectButton = new QPushButton("Oops, try again! 🤔");
+    m_incorrectButton = new QPushButton("Oops, try again! 💖");
+    m_historyButton = new QPushButton("History! 🕰️"); // Our new button!
 
     // --- Layout ---
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
@@ -32,10 +35,15 @@ FlashcardWidget::FlashcardWidget(FlashcardSession* session, QWidget *parent)
     mainLayout->addWidget(m_flipButton);
     mainLayout->addLayout(buttonLayout);
     
+    // Add the new button below the other buttons
+    mainLayout->addWidget(m_historyButton);
+    m_historyButton->hide(); // Hide it until we have a card!
+
     // --- Connections ---
     connect(m_flipButton, &QPushButton::clicked, this, &FlashcardWidget::flipCard);
     connect(m_correctButton, &QPushButton::clicked, this, &FlashcardWidget::onCorrect);
     connect(m_incorrectButton, &QPushButton::clicked, this, &FlashcardWidget::onIncorrect);
+    connect(m_historyButton, &QPushButton::clicked, this, &FlashcardWidget::showHistory); // Connect the new button!
 
     // --- Initial State ---
     showNextCard();
@@ -58,6 +66,7 @@ void FlashcardWidget::showNextCard() {
         m_flipButton->hide();
         m_correctButton->hide();
         m_incorrectButton->hide();
+        m_historyButton->hide(); // Hide our new button when the session is over
         m_progressLabel->setText("You're a star! 🌟");
     }
 }
@@ -70,6 +79,9 @@ void FlashcardWidget::updateUI() {
     m_correctButton->setVisible(m_isFlipped);
     m_incorrectButton->setVisible(m_isFlipped);
     
+    // Show the history button only when we have a card!
+    m_historyButton->setVisible(true);
+
     int total = m_session->totalSessionCards();
     int currentNum = total - m_session->cardsRemaining() - (m_currentCard ? 1 : 0) + 1;
     if (total > 0) {
@@ -92,4 +104,38 @@ void FlashcardWidget::onCorrect() {
 void FlashcardWidget::onIncorrect() {
     m_session->recordAnswer(false);
     showNextCard();
+}
+
+// Our new function to show the history!
+void FlashcardWidget::showHistory() {
+    if (!m_currentCard) return;
+
+    // Get the progress from our session manager!
+    const FlashcardProgress* progress = m_session->getCardProgress(m_currentCard->id);
+    if (!progress) {
+        QMessageBox::information(this, "Card History", "No history found for this card.");
+        return;
+    }
+
+    QString historyText = "💖 **History for this card:** 💖\n\n";
+    historyText += QString("Current Box: **%1**\n").arg(progress->box);
+    historyText += QString("Next Review: **%1**\n\n").arg(QLocale::system().toString(progress->nextReviewDate, QLocale::LongFormat));
+    historyText += "--- **Past Attempts** ---\n";
+
+    if (progress->attempts.isEmpty()) {
+        historyText += "This is your first try! Good luck! 😊";
+    } else {
+        for (const AttemptRecord& attempt : progress->attempts) {
+            QString result = attempt.wasCorrect ? "Correct! ✅" : "Incorrect! ❌";
+            historyText += QString("• %1: %2\n").arg(QLocale::system().toString(attempt.date, QLocale::ShortFormat)).arg(result);
+        }
+    }
+
+    QMessageBox msgBox;
+    msgBox.setWindowTitle("Card History");
+    msgBox.setTextFormat(Qt::RichText);
+    msgBox.setText(historyText);
+    msgBox.setStandardButtons(QMessageBox::Ok);
+    msgBox.setWindowFlags(msgBox.windowFlags() | Qt::FramelessWindowHint);
+    msgBox.exec();
 }
