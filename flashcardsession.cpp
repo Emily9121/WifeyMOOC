@@ -30,7 +30,9 @@ void FlashcardSession::loadProgress() {
             FlashcardProgress p;
             p.cardId = obj["id"].toString();
             p.frontText = obj["front"].toString(); // Load front text
+            p.frontExample = obj["frontExample"].toString(); // ✨ Load the example text! ✨
             p.backText = obj["back"].toString();   // Load back text
+            p.backExample = obj["backExample"].toString(); // ✨ Load the back example text! ✨
             p.box = obj["box"].toInt();
             p.nextReviewDate = QDateTime::fromString(obj["reviewDate"].toString(), Qt::ISODate);
             
@@ -53,7 +55,9 @@ void FlashcardSession::loadProgress() {
             FlashcardProgress p;
             p.cardId = card.id;
             p.frontText = card.front; // Set initial text
+            p.frontExample = card.frontExample; // ✨ Set the initial example text! ✨
             p.backText = card.back;   // Set initial text
+            p.backExample = card.backExample; // ✨ Set the initial back example text! ✨
             p.box = 1;
             p.nextReviewDate = QDateTime::currentDateTime().addDays(-1); // Ready for review now!
             progressMap[card.id] = p;
@@ -67,7 +71,9 @@ void FlashcardSession::saveProgress() {
         QJsonObject obj;
         obj["id"] = p.cardId;
         obj["front"] = p.frontText; // Save front text
+        obj["frontExample"] = p.frontExample; // ✨ Save the example text! ✨
         obj["back"] = p.backText;   // Save back text
+        obj["backExample"] = p.backExample; // ✨ Save the back example text! ✨
         obj["box"] = p.box;
         obj["reviewDate"] = p.nextReviewDate.toString(Qt::ISODate);
 
@@ -170,9 +176,7 @@ int FlashcardSession::totalSessionCards() const {
     return originalSessionQueue.size();
 }
 
-// Our missing piece!
 const FlashcardProgress* FlashcardSession::getCardProgress(const QString& cardId) const {
-    // We use a const iterator to avoid returning a pointer to a temporary value.
     QMap<QString, FlashcardProgress>::const_iterator it = progressMap.find(cardId);
     if (it != progressMap.end()) {
         return &(*it);

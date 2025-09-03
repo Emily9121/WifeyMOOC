@@ -22,7 +22,9 @@ struct AttemptRecord {
 struct FlashcardProgress {
     QString cardId;
     QString frontText; // So you can read the word in the file!
+    QString frontExample; // We added this to save the example!
     QString backText;  // So you can read the translation!
+    QString backExample; // And this to save the back example!
     int box = 1;
     QDateTime nextReviewDate;
     QList<AttemptRecord> attempts; // A full history of every try!
@@ -40,7 +42,6 @@ public:
     int cardsRemaining() const;
     int totalSessionCards() const;
     
-    // The missing method!
     const FlashcardProgress* getCardProgress(const QString& cardId) const;
 
 private:

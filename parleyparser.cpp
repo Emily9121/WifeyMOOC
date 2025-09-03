@@ -20,6 +20,8 @@ bool ParleyParser::loadFile(const QString& filePath) {
     QString currentFront;
     QString currentBack;
     QString currentId;
+    QString currentFrontExample;
+    QString currentBackExample;
     QString currentTranslationId; // Helper to know if we're in translation 0 or 1
 
     while (!xml.atEnd() && !xml.hasError()) {
@@ -32,32 +34,41 @@ bool ParleyParser::loadFile(const QString& filePath) {
             }
             if (xml.name() == QLatin1String("entry")) {
                 currentId = xml.attributes().value("id").toString();
+                currentFront.clear();
+                currentBack.clear();
+                currentFrontExample.clear();
+                currentBackExample.clear();
             }
             if (xml.name() == QLatin1String("translation")) {
                 // We remember which translation we're inside of
                 currentTranslationId = xml.attributes().value("id").toString();
             }
             // --- ✨ Here is the fix! ✨ ---
-            // We need to find the <text> tag, and *then* read the characters inside it.
-            // readElementText() was skipping ahead too far!
             if (xml.name() == QLatin1String("text")) {
                 if (currentTranslationId == "0") {
-                    xml.readNext(); // Move to the character data
+                    xml.readNext();
                     currentFront = xml.text().toString();
                 } else if (currentTranslationId == "1") {
-                    xml.readNext(); // Move to the character data
+                    xml.readNext();
                     currentBack = xml.text().toString();
+                }
+            }
+            if (xml.name() == QLatin1String("example")) {
+                if (currentTranslationId == "0") {
+                    xml.readNext();
+                    currentFrontExample = xml.text().toString();
+                } else if (currentTranslationId == "1") {
+                    xml.readNext();
+                    currentBackExample = xml.text().toString();
                 }
             }
         }
 
         if (token == QXmlStreamReader::EndElement && xml.name() == QLatin1String("entry")) {
             if (!currentFront.isEmpty() && !currentBack.isEmpty()) {
-                cards.append({currentId, currentFront, currentBack});
+                cards.append({currentId, currentFront, currentFrontExample, currentBack, currentBackExample});
             }
             // Clear for the next entry
-            currentFront.clear();
-            currentBack.clear();
             currentId.clear();
             currentTranslationId.clear();
         }

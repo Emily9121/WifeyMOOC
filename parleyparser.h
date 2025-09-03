@@ -12,7 +12,9 @@
 struct Flashcard {
     QString id;
     QString front;
+    QString frontExample; // We need this little field to store the example!
     QString back;
+    QString backExample; // And this one for the back example!
 };
 
 class ParleyParser {

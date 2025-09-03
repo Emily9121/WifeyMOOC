@@ -4,7 +4,8 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QMessageBox>
-#include <QLocale> // <-- Add this include!
+#include <QLocale>
+#include <QDebug> // <-- Add this include!
 
 FlashcardWidget::FlashcardWidget(FlashcardSession* session, QWidget *parent)
     : QWidget(parent), m_session(session), m_currentCard(nullptr), m_isFlipped(false) {
@@ -74,7 +75,26 @@ void FlashcardWidget::showNextCard() {
 void FlashcardWidget::updateUI() {
     if (!m_currentCard) return;
 
-    m_cardTextLabel->setText(m_isFlipped ? m_currentCard->back : m_currentCard->front);
+    // --- ✨ Here's the new logic to display the example! ✨ ---
+    QString text;
+    QString example;
+
+    if (m_isFlipped) {
+        text = m_currentCard->back;
+        example = m_currentCard->backExample;
+    } else {
+        text = m_currentCard->front;
+        example = m_currentCard->frontExample;
+    }
+
+    if (!example.isEmpty()) {
+        text += QString("<br><br><span style=\"font-style: italic; font-size: 16pt;\">%1</span>").arg(example);
+    }
+    
+    m_cardTextLabel->setText(text);
+    m_cardTextLabel->setTextFormat(Qt::RichText);
+    m_cardTextLabel->setAlignment(Qt::AlignCenter);
+
     m_flipButton->setVisible(!m_isFlipped);
     m_correctButton->setVisible(m_isFlipped);
     m_incorrectButton->setVisible(m_isFlipped);

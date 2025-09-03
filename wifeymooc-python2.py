@@ -22,6 +22,7 @@ FONT_QUESTION_LABEL = ("Arial", 14)
 FONT_OPTION = ("Arial", 12)
 FONT_TAG = ("Arial", 14, "bold")
 FONT_FEEDBACK = ("Arial", 12)
+FONT_EXAMPLE = ("Arial", 16, "italic")
 CANVAS_MIN_WIDTH = 200
 CANVAS_MIN_HEIGHT = 200
 
@@ -40,9 +41,18 @@ class ParleyParser:
             for entry in root.findall('.//entries/entry'):
                 card_id = entry.get('id')
                 front = entry.findtext('.//translation[@id="0"]/text')
+                front_example = entry.findtext('.//translation[@id="0"]/example', '')
                 back = entry.findtext('.//translation[@id="1"]/text')
+                back_example = entry.findtext('.//translation[@id="1"]/example', '')
+
                 if card_id is not None and front and back:
-                    self.cards.append({'id': card_id, 'front': front, 'back': back})
+                    self.cards.append({
+                        'id': card_id,
+                        'front': front,
+                        'front_example': front_example,
+                        'back': back,
+                        'back_example': back_example
+                    })
             return True
         except Exception as e:
             print(f"Oh no! Error parsing Parley file: {e}")
@@ -68,6 +78,10 @@ class FlashcardSession:
         self.load_progress()
         self.save_progress()
 
+    def get_card_progress(self, card_id):
+        # The keyhole for our history door! 💖
+        return self.progress_map.get(card_id, None)
+
     def load_progress(self):
         if os.path.exists(self.progress_file_path):
             with open(self.progress_file_path, 'r', encoding='utf-8') as f:
@@ -75,13 +89,14 @@ class FlashcardSession:
                 for p_data in progress_data:
                     self.progress_map[p_data['id']] = p_data
         
-        # Make sure every card has a progress entry
         for card in self.all_cards:
             if card['id'] not in self.progress_map:
                 self.progress_map[card['id']] = {
                     'id': card['id'],
                     'front': card['front'],
+                    'front_example': card['front_example'],
                     'back': card['back'],
+                    'back_example': card['back_example'],
                     'box': 1,
                     'reviewDate': (datetime.datetime.now() - datetime.timedelta(days=1)).isoformat(),
                     'attempts': []
@@ -459,25 +474,39 @@ class WifeyMOOCApp:
         self.show_next_card()
 
     def setup_flashcard_ui(self):
-        # This new version builds the flashcard UI in a brand new container!
         self.container = tk.Frame(self.root)
         self.container.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-        
+
         self.fc_progress_label = tk.Label(self.container, text="", font=("Arial", 12))
         self.fc_progress_label.pack(pady=10)
 
-        self.fc_card_label = tk.Label(self.container, text="", font=("Arial", 24), wraplength=700, borderwidth=2, relief="solid", padx=20, pady=20)
-        self.fc_card_label.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+        self.fc_card_frame = tk.Frame(self.container, borderwidth=2, relief="solid", padx=20, pady=20, bg='white')
+        self.fc_card_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
 
-        self.fc_flip_button = tk.Button(self.container, text="Flip Me! ✨", command=self.flip_card)
-        self.fc_flip_button.pack(pady=10)
+        self.fc_card_text_label = tk.Label(self.fc_card_frame, text="", font=("Arial", 24), wraplength=700, justify=tk.CENTER, bg='white')
+        self.fc_card_text_label.pack(fill=tk.BOTH, expand=True)
+
+        self.fc_card_example_label = tk.Label(self.fc_card_frame, text="", font=FONT_EXAMPLE, wraplength=700, justify=tk.CENTER, bg='white')
+        self.fc_card_example_label.pack(fill=tk.BOTH, expand=True, pady=(5,0))
+
+        # Buttons and their container frames
+        self.flip_and_history_frame = tk.Frame(self.container)
+        self.flip_and_history_frame.pack(pady=10)
+
+        self.fc_flip_button = tk.Button(self.flip_and_history_frame, text="Flip Me! ✨", command=self.flip_card)
+        self.fc_flip_button.pack(side=tk.LEFT, padx=10)
+
+        self.fc_history_button = tk.Button(self.flip_and_history_frame, text="History! 🕰️", command=self.show_flashcard_history)
+        self.fc_history_button.pack(side=tk.LEFT, padx=10)
 
         self.answer_frame = tk.Frame(self.container)
-        self.fc_correct_button = tk.Button(self.answer_frame, text="I knew it! 😊", command=self.on_correct)
-        self.fc_incorrect_button = tk.Button(self.answer_frame, text="Oops, try again! 🤔", command=self.on_incorrect)
-        self.fc_correct_button.pack(side=tk.LEFT, padx=10)
-        self.fc_incorrect_button.pack(side=tk.RIGHT, padx=10)
 
+        self.fc_correct_button = tk.Button(self.answer_frame, text="I knew it! 😊", command=self.on_correct)
+        self.fc_correct_button.pack(side=tk.LEFT, padx=10)
+
+        self.fc_incorrect_button = tk.Button(self.answer_frame, text="Oops, try again! 🤔", command=self.on_incorrect)
+        self.fc_incorrect_button.pack(side=tk.LEFT, padx=10)
+        
     def show_next_card(self):
         card = self.flashcard_session.get_next_card()
         self.is_card_flipped = False
@@ -493,17 +522,24 @@ class WifeyMOOCApp:
         card = self.flashcard_session.current_card
         if not card: return
 
-        self.fc_card_label.config(text=card['back'] if self.is_card_flipped else card['front'])
+        text = card['back'] if self.is_card_flipped else card['front']
+        example = card['back_example'] if self.is_card_flipped else card['front_example']
+
+        self.fc_card_text_label.config(text=text)
+        if example:
+            self.fc_card_example_label.config(text=example)
+        else:
+            self.fc_card_example_label.config(text="")
         
         if self.is_card_flipped:
-            self.fc_flip_button.pack_forget()
+            self.flip_and_history_frame.pack_forget()
             self.answer_frame.pack(pady=10)
         else:
-            self.fc_flip_button.pack(pady=10)
             self.answer_frame.pack_forget()
+            self.flip_and_history_frame.pack(pady=10)
             
         total = self.flashcard_session.total_session_cards()
-        current_num = total - self.flashcard_session.cards_remaining() - (1 if self.flashcard_session.current_card else 0)
+        current_num = total - self.flashcard_session.cards_remaining() - (1 if self.flashcard_session.current_card else 0) + 1
         if total > 0:
             self.fc_progress_label.config(text=f"Card {current_num} of {total}")
         else:
@@ -2361,6 +2397,31 @@ class WifeyMOOCApp:
             self.launch_file(path)
         except Exception as e:
             messagebox.showerror("Audio Error", f"Failed to play audio:\n{e}")
+
+    def show_flashcard_history(self):
+        if not self.flashcard_session or not self.flashcard_session.current_card:
+            messagebox.showwarning("Card History", "No card is currently active.")
+            return
+
+        card_id = self.flashcard_session.current_card['id']
+        progress = self.flashcard_session.get_card_progress(card_id)
+
+        if not progress or not progress.get('attempts'):
+            messagebox.showinfo("Card History", "This is your first try! Good luck! 😊")
+            return
+
+        history_text = "💖 Card History 💖\n\n"
+        history_text += f"Current Box: {progress['box']}\n"
+        history_text += f"Next Review: {progress['reviewDate'].split('T')[0]}\n\n"
+        history_text += "--- Past Attempts ---\n"
+        
+        for attempt in progress['attempts']:
+            date_str = attempt['date'].split('T')[0]
+            result = "Correct! ✅" if attempt['correct'] else "Incorrect! ❌"
+            history_text += f"• {date_str}: {result}\n"
+
+        messagebox.showinfo("Card History", history_text)
+
 
 def main():
     parser = argparse.ArgumentParser(description='Wifey MOOC Application')
