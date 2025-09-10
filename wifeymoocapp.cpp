@@ -20,7 +20,12 @@
 #include "flashcardwidget.h"
 #include <QInputDialog>
 #include <QDebug>
-
+#include <QCoreApplication>
+// --- ✨ Correct Android Include ✨ ---
+#if defined(Q_OS_ANDROID)
+#include <QJniObject>
+#endif
+// --- End of correct includes ---
 
 WifeyMOOCApp::WifeyMOOCApp(const QString &questionFile,
                            const QString &progressFile,
@@ -81,6 +86,9 @@ WifeyMOOCApp::WifeyMOOCApp(const QString &questionFile,
     } else {
         displayWelcome();
     }
+
+    requestStoragePermission();
+    
 }
 
 WifeyMOOCApp::~WifeyMOOCApp()
@@ -489,7 +497,26 @@ bool WifeyMOOCApp::loadQuestionsFromFile(const QString &filePath)
     
     m_questions = doc.array();
     m_currentQuestionFile = filePath;
-    m_jsonDir = QFileInfo(filePath).absolutePath();
+    QString realFilePath = filePath;
+    #if defined(Q_OS_ANDROID)
+        if (realFilePath.startsWith("content://")) {
+            QJniObject pathString = QJniObject::fromString(realFilePath);
+            QJniObject javaClass("net/wifey/wifeymooc/WifeyUtils");
+
+            // This is the corrected way to call the Java function and get the string back
+            QJniObject translatedPath = javaClass.callStaticObjectMethod(
+                "getPathFromUri",
+                "(Landroid/content/Context;Ljava/lang/String;)Ljava/lang/String;",
+                QCoreApplication::instance()->property("androidActivity").value<QJniObject>().object(),
+                pathString.object<jstring>()
+                );
+
+            if (translatedPath.isValid()) {
+                realFilePath = translatedPath.toString();
+            }
+        }
+    #endif
+    m_jsonDir = QFileInfo(realFilePath).absolutePath();
     m_currentQuestion = 0;
     m_score = 0;
     m_studentAnswers.clear();
@@ -595,14 +622,18 @@ bool WifeyMOOCApp::saveProgressToFile(const QString &filePath)
 
 QString WifeyMOOCApp::resolveMediaPath(const QString &path)
 {
+    // If the path is already absolute, just use it!
     if (QFileInfo(path).isAbsolute()) {
         return path;
     }
-    
+
+    // Otherwise, combine the path of the loaded JSON file (m_jsonDir)
+    // with the relative path from the JSON (like "images/my_pic.png").
+    // This now works perfectly for both desktop AND Android! ✨
     if (!m_jsonDir.isEmpty()) {
         return QDir(m_jsonDir).absoluteFilePath(path);
     }
-    
+
     return path;
 }
 
@@ -731,4 +762,25 @@ void WifeyMOOCApp::closeEvent(QCloseEvent *event)
     }
     
     QMainWindow::closeEvent(event);
+}
+
+//Android Permissions
+void WifeyMOOCApp::requestStoragePermission()
+{
+#if defined(Q_OS_ANDROID)
+    QJniObject javaClass("net/wifey/wifeymooc/WifeyUtils");
+    if (javaClass.isValid()) {
+        // This is the new, correct way to get the main Android activity
+        QJniObject qtActivity = QCoreApplication::instance()->property("androidActivity").value<QJniObject>();
+        if (qtActivity.isValid()) {
+            javaClass.callStaticMethod<void>("requestStoragePermission",
+                                             "(Lorg/qtproject/qt/android/bindings/QtActivity;)V",
+                                             qtActivity.object());
+        } else {
+            qDebug() << "Could not get Qt Activity object!";
+        }
+    } else {
+        qDebug() << "Could not find WifeyUtils Java class!";
+    }
+#endif
 }

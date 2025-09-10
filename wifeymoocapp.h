@@ -54,6 +54,8 @@
 #include "mediahandler.h"
 #include "flashcardsession.h" // <-- It's already here, perfect!
 
+class QPermission; // ✨ Add this line!
+
 class WifeyMOOCApp : public QMainWindow
 {
     Q_OBJECT
@@ -97,6 +99,9 @@ private:
     
     // --- This is a new helper function to switch back to quiz mode! ---
     void restoreQuizUI();
+
+    // Android Permission
+    void requestStoragePermission(); // ✨ Add this beautiful line! ✨
 
 
     // UI Components
