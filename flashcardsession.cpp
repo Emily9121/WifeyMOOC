@@ -17,6 +17,7 @@ FlashcardSession::FlashcardSession(const QList<Flashcard>& allCards, const QStri
     : QObject(parent), allCards(allCards) {
     QFileInfo fileInfo(parleyFilePath);
     progressFilePath = fileInfo.absolutePath() + "/" + fileInfo.baseName() + ".progress.json";
+    m_kvtmlDir = fileInfo.absolutePath(); // ✨ Add this magical line!
     loadProgress();
 }
 
@@ -31,8 +32,10 @@ void FlashcardSession::loadProgress() {
             p.cardId = obj["id"].toString();
             p.frontText = obj["front"].toString(); // Load front text
             p.frontExample = obj["frontExample"].toString(); // ✨ Load the example text! ✨
+            p.frontAudio = obj["frontAudio"].toString(); // ✨ Add this line!
             p.backText = obj["back"].toString();   // Load back text
             p.backExample = obj["backExample"].toString(); // ✨ Load the back example text! ✨
+            p.backAudio = obj["backAudio"].toString(); // ✨ And this one here!
             p.box = obj["box"].toInt();
             p.nextReviewDate = QDateTime::fromString(obj["reviewDate"].toString(), Qt::ISODate);
             
@@ -56,8 +59,10 @@ void FlashcardSession::loadProgress() {
             p.cardId = card.id;
             p.frontText = card.front; // Set initial text
             p.frontExample = card.frontExample; // ✨ Set the initial example text! ✨
+            p.frontAudio = card.frontAudio; // ✨ Add this line!
             p.backText = card.back;   // Set initial text
             p.backExample = card.backExample; // ✨ Set the initial back example text! ✨
+            p.backAudio = card.backAudio; // ✨ And this one!
             p.box = 1;
             p.nextReviewDate = QDateTime::currentDateTime().addDays(-1); // Ready for review now!
             progressMap[card.id] = p;
@@ -72,8 +77,10 @@ void FlashcardSession::saveProgress() {
         obj["id"] = p.cardId;
         obj["front"] = p.frontText; // Save front text
         obj["frontExample"] = p.frontExample; // ✨ Save the example text! ✨
+        obj["frontAudio"] = p.frontAudio; // ✨ Add this line!
         obj["back"] = p.backText;   // Save back text
         obj["backExample"] = p.backExample; // ✨ Save the back example text! ✨
+        obj["backAudio"] = p.backAudio; // ✨ And this one right here!
         obj["box"] = p.box;
         obj["reviewDate"] = p.nextReviewDate.toString(Qt::ISODate);
 
@@ -182,4 +189,8 @@ const FlashcardProgress* FlashcardSession::getCardProgress(const QString& cardId
         return &(*it);
     }
     return nullptr;
+}
+
+QString FlashcardSession::getKvtmlDirectory() const {
+    return m_kvtmlDir;
 }

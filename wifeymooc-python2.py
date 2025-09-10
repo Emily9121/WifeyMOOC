@@ -40,19 +40,33 @@ class ParleyParser:
             
             for entry in root.findall('.//entries/entry'):
                 card_id = entry.get('id')
-                front = entry.findtext('.//translation[@id="0"]/text')
-                front_example = entry.findtext('.//translation[@id="0"]/example', '')
-                back = entry.findtext('.//translation[@id="1"]/text')
-                back_example = entry.findtext('.//translation[@id="1"]/example', '')
+                
+                # We'll look for each translation separately for extra cuteness!
+                trans0 = entry.find('.//translation[@id="0"]') # Trump's USA / Rowling's UK
+                trans1 = entry.find('.//translation[@id="1"]') # Rest of the world.
+                
+                if card_id is not None and trans0 is not None and trans1 is not None:
+                    front = trans0.findtext('text')
+                    front_example = trans0.findtext('example', '')
+                    front_audio_raw = trans0.findtext('sound', '')
+                    # Let's clean up that path!
+                    front_audio = front_audio_raw.replace('file:', '') if front_audio_raw else ''
 
-                if card_id is not None and front and back:
-                    self.cards.append({
-                        'id': card_id,
-                        'front': front,
-                        'front_example': front_example,
-                        'back': back,
-                        'back_example': back_example
-                    })
+                    back = trans1.findtext('text')
+                    back_example = trans1.findtext('example', '')
+                    back_audio_raw = trans1.findtext('sound', '')
+                    back_audio = back_audio_raw.replace('file:', '') if back_audio_raw else ''
+
+                    if front and back:
+                        self.cards.append({
+                            'id': card_id,
+                            'front': front,
+                            'front_example': front_example,
+                            'front_audio': front_audio, # Our new sound!
+                            'back': back,
+                            'back_example': back_example,
+                            'back_audio': back_audio # And the other sound!
+                        })
             return True
         except Exception as e:
             print(f"Oh no! Error parsing Parley file: {e}")
@@ -70,6 +84,7 @@ class FlashcardSession:
         # Create the cute little progress diary path
         base_name = os.path.splitext(os.path.basename(parley_file_path))[0]
         dir_name = os.path.dirname(parley_file_path)
+        self.media_dir = dir_name
         self.progress_file_path = os.path.join(dir_name, f"{base_name}.progress.json")
         
         self.leitner_intervals = {1: 1, 2: 3, 3: 7, 4: 14, 5: 30}
@@ -95,8 +110,10 @@ class FlashcardSession:
                     'id': card['id'],
                     'front': card['front'],
                     'front_example': card['front_example'],
+                    'front_audio': card.get('front_audio', ''), # ✨ Add me!
                     'back': card['back'],
                     'back_example': card['back_example'],
+                    'back_audio': card.get('back_audio', ''), # ✨ And me too!
                     'box': 1,
                     'reviewDate': (datetime.datetime.now() - datetime.timedelta(days=1)).isoformat(),
                     'attempts': []
@@ -506,6 +523,8 @@ class WifeyMOOCApp:
 
         self.fc_incorrect_button = tk.Button(self.answer_frame, text="Oops, try again! 🤔", command=self.on_incorrect)
         self.fc_incorrect_button.pack(side=tk.LEFT, padx=10)
+
+        self.fc_audio_button = tk.Button(self.container, text="Play Audio 🔊", command=self.play_flashcard_audio)
         
     def show_next_card(self):
         card = self.flashcard_session.get_next_card()
@@ -544,6 +563,12 @@ class WifeyMOOCApp:
             self.fc_progress_label.config(text=f"Card {current_num} of {total}")
         else:
             self.fc_progress_label.config(text="No cards due for review today!")
+
+        audio_path = card.get('back_audio') if self.is_card_flipped else card.get('front_audio')
+        if audio_path:
+            self.fc_audio_button.pack(pady=5)
+        else:
+            self.fc_audio_button.pack_forget()
 
     def flip_card(self):
         self.is_card_flipped = True
@@ -632,6 +657,29 @@ class WifeyMOOCApp:
             btn.pack(pady=2)
 
     # ✨ ADD THIS NEW METHOD inside the WifeyMOOCApp class ✨
+
+    def play_flashcard_audio(self):
+            """A little function to play our flashcard sounds! 🔊💖"""
+            if not self.flashcard_session or not self.flashcard_session.current_card:
+                return
+
+            card = self.flashcard_session.current_card
+            # Check which side of the card is showing!
+            if self.is_card_flipped:
+                audio_path_relative = card.get('back_audio', '')
+            else:
+                audio_path_relative = card.get('front_audio', '')
+
+            if audio_path_relative:
+                # Remember that path we saved? Time to use it!
+                base_dir = self.flashcard_session.media_dir
+                full_path = os.path.join(base_dir, audio_path_relative)
+
+                if os.path.exists(full_path):
+                    self.open_audio(full_path)
+                else:
+                    messagebox.showwarning("Oopsie!", f"Oh no, I couldn't find the audio file, sweetie!\n{full_path}")
+
     def view_lesson_pdf(self):
         """A super smart function to open our lesson PDF! 📚"""
         if self.lesson_pdf_path and os.path.exists(self.lesson_pdf_path):

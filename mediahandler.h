@@ -49,6 +49,7 @@ public:
     //Playback
     void embedAudioPlayer(const QString &audioPath, QWidget *parent);
     void embedVideoPlayer(const QString &videoPath, QWidget *parent, int width = 640, int height = 360);
+    void setBaseMediaDir(const QString& dir) { m_baseMediaDir = dir; } // ✨ Add this line!
     static int s_videoWidth;
     static int s_videoHeight;
 

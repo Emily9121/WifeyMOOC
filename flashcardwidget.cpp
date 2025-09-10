@@ -7,8 +7,8 @@
 #include <QLocale>
 #include <QDebug> // <-- Add this include!
 
-FlashcardWidget::FlashcardWidget(FlashcardSession* session, QWidget *parent)
-    : QWidget(parent), m_session(session), m_currentCard(nullptr), m_isFlipped(false) {
+FlashcardWidget::FlashcardWidget(FlashcardSession* session, const QString& mediaDir, QWidget *parent)
+    : QWidget(parent), m_session(session), m_mediaDir(mediaDir), m_currentCard(nullptr), m_isFlipped(false) { // Update this line!
 
     // --- Create Widgets ---
     m_cardTextLabel = new QLabel("Starting session...");
@@ -23,6 +23,11 @@ FlashcardWidget::FlashcardWidget(FlashcardSession* session, QWidget *parent)
     m_correctButton = new QPushButton("I knew it! 😊");
     m_incorrectButton = new QPushButton("Oops, try again! 💖");
     m_historyButton = new QPushButton("History! 🕰️"); // Our new button!
+
+    // --- Media ---
+
+    m_mediaHandler = new MediaHandler(this);
+    m_mediaHandler->setBaseMediaDir(m_mediaDir); // Add this!
 
     // --- Layout ---
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
@@ -40,11 +45,16 @@ FlashcardWidget::FlashcardWidget(FlashcardSession* session, QWidget *parent)
     mainLayout->addWidget(m_historyButton);
     m_historyButton->hide(); // Hide it until we have a card!
 
+    m_audioButton = new QPushButton("Play Audio 🔊");
+    m_audioButton->hide(); // It's shy! We'll show it later.
+    mainLayout->addWidget(m_audioButton);
+
     // --- Connections ---
     connect(m_flipButton, &QPushButton::clicked, this, &FlashcardWidget::flipCard);
     connect(m_correctButton, &QPushButton::clicked, this, &FlashcardWidget::onCorrect);
     connect(m_incorrectButton, &QPushButton::clicked, this, &FlashcardWidget::onIncorrect);
     connect(m_historyButton, &QPushButton::clicked, this, &FlashcardWidget::showHistory); // Connect the new button!
+    connect(m_audioButton, &QPushButton::clicked, this, &FlashcardWidget::playAudio);
 
     // --- Initial State ---
     showNextCard();
@@ -68,6 +78,7 @@ void FlashcardWidget::showNextCard() {
         m_correctButton->hide();
         m_incorrectButton->hide();
         m_historyButton->hide(); // Hide our new button when the session is over
+        m_audioButton->hide(); // Add this line!
         m_progressLabel->setText("You're a star! 🌟");
     }
 }
@@ -90,6 +101,15 @@ void FlashcardWidget::updateUI() {
     if (!example.isEmpty()) {
         text += QString("<br><br><span style=\"font-style: italic; font-size: 16pt;\">%1</span>").arg(example);
     }
+
+        QString audioPath;
+    if (m_isFlipped) {
+        // ...
+        audioPath = m_currentCard->backAudio;
+    } else {
+        // ...
+        audioPath = m_currentCard->frontAudio;
+    }
     
     m_cardTextLabel->setText(text);
     m_cardTextLabel->setTextFormat(Qt::RichText);
@@ -101,6 +121,13 @@ void FlashcardWidget::updateUI() {
     
     // Show the history button only when we have a card!
     m_historyButton->setVisible(true);
+
+        // Add this logic to show/hide the button!
+    if (!audioPath.isEmpty()) {
+        m_audioButton->show();
+    } else {
+        m_audioButton->hide();
+    }
 
     int total = m_session->totalSessionCards();
     int currentNum = total - m_session->cardsRemaining() - (m_currentCard ? 1 : 0) + 1;
@@ -158,4 +185,19 @@ void FlashcardWidget::showHistory() {
     msgBox.setStandardButtons(QMessageBox::Ok);
     msgBox.setWindowFlags(msgBox.windowFlags() | Qt::FramelessWindowHint);
     msgBox.exec();
+}
+
+void FlashcardWidget::playAudio() {
+    if (!m_currentCard) return;
+
+    QString audioPath;
+    if (m_isFlipped) {
+        audioPath = m_currentCard->backAudio;
+    } else {
+        audioPath = m_currentCard->frontAudio;
+    }
+
+    if (!audioPath.isEmpty()) {
+        m_mediaHandler->playAudio(audioPath);
+    }
 }

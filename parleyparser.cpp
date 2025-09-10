@@ -22,6 +22,8 @@ bool ParleyParser::loadFile(const QString& filePath) {
     QString currentId;
     QString currentFrontExample;
     QString currentBackExample;
+    QString currentFrontAudio;
+    QString currentBackAudio;
     QString currentTranslationId; // Helper to know if we're in translation 0 or 1
 
     while (!xml.atEnd() && !xml.hasError()) {
@@ -38,6 +40,8 @@ bool ParleyParser::loadFile(const QString& filePath) {
                 currentBack.clear();
                 currentFrontExample.clear();
                 currentBackExample.clear();
+                currentFrontAudio.clear();
+                currentBackAudio.clear();
             }
             if (xml.name() == QLatin1String("translation")) {
                 // We remember which translation we're inside of
@@ -62,11 +66,22 @@ bool ParleyParser::loadFile(const QString& filePath) {
                     currentBackExample = xml.text().toString();
                 }
             }
+            if (xml.name() == QLatin1String("sound")) {
+                if (currentTranslationId == "0") {
+                    xml.readNext();
+                    currentFrontAudio = xml.text().toString();
+                    currentFrontAudio.remove("file:"); // Bye-bye, boring prefix!
+                } else if (currentTranslationId == "1") {
+                    xml.readNext();
+                    currentBackAudio = xml.text().toString();
+                    currentBackAudio.remove("file:"); // You go too!
+                }
+            }
         }
 
         if (token == QXmlStreamReader::EndElement && xml.name() == QLatin1String("entry")) {
             if (!currentFront.isEmpty() && !currentBack.isEmpty()) {
-                cards.append({currentId, currentFront, currentFrontExample, currentBack, currentBackExample});
+                cards.append({currentId, currentFront, currentFrontExample, currentFrontAudio, currentBack, currentBackExample, currentBackAudio});
             }
             // Clear for the next entry
             currentId.clear();

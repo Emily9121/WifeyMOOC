@@ -51,13 +51,13 @@ WifeyMOOCApp::WifeyMOOCApp(const QString &questionFile,
     , m_enableSkipButton(DEBUG)
 {
     #ifdef Q_OS_LINUX
-    setWindowTitle("WifeyMOOC 2.0 for Linux");
+    setWindowTitle("WifeyMOOC 2.0.2 for Linux");
     #elif defined(Q_OS_WINDOWS)
-        setWindowTitle("WifeyMOOC 2.0 for Windows");
+        setWindowTitle("WifeyMOOC 2.0.2 for Windows");
     #elif defined(Q_OS_MACOS)
-        setWindowTitle("WifeyMOOC 2.0 for macOS");
+        setWindowTitle("WifeyMOOC 2.0.2 for macOS");
     #else
-        setWindowTitle("WifeyMOOC 2.0 on Unsupported OS");
+        setWindowTitle("WifeyMOOC 2.0.2 on Unsupported OS");
     #endif
 
     setMinimumSize(1000, 700);
@@ -451,7 +451,8 @@ void WifeyMOOCApp::loadParleyFile(const QString& filePath)
         m_flashcardSession = new FlashcardSession(parser.getCards(), filePath, this);
         m_flashcardSession->startSession(sessionSize);
 
-        FlashcardWidget* flashcardWidget = new FlashcardWidget(m_flashcardSession);
+        QString mediaDir = m_flashcardSession->getKvtmlDirectory();
+        FlashcardWidget* flashcardWidget = new FlashcardWidget(m_flashcardSession, mediaDir);
         
         if (centralWidget()) {
             centralWidget()->deleteLater();

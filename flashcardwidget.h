@@ -12,7 +12,7 @@ class FlashcardWidget : public QWidget {
     Q_OBJECT
 
 public:
-    explicit FlashcardWidget(FlashcardSession* session, QWidget *parent = nullptr);
+    explicit FlashcardWidget(FlashcardSession* session, const QString& mediaDir, QWidget *parent = nullptr);
     ~FlashcardWidget();
 
 private slots:
@@ -20,6 +20,7 @@ private slots:
     void onCorrect();
     void onIncorrect();
     void showHistory(); // A new slot for our new button!
+    void playAudio();
 
 private:
     void showNextCard();
@@ -28,6 +29,8 @@ private:
     FlashcardSession* m_session;
     const Flashcard* m_currentCard;
     bool m_isFlipped;
+    MediaHandler* m_mediaHandler; // ✨
+    QString m_mediaDir;          // ✨
 
     QLabel* m_cardTextLabel;
     QLabel* m_progressLabel;
@@ -35,6 +38,7 @@ private:
     QPushButton* m_correctButton;
     QPushButton* m_incorrectButton;
     QPushButton* m_historyButton; // Our new button for history!
+    QPushButton* m_audioButton;    // ✨
 };
 
 #endif // FLASHCARDWIDGET_H

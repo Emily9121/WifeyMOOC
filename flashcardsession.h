@@ -11,6 +11,7 @@
 #include <QJsonArray>
 #include <QFile>
 #include <QDir>
+#include "mediahandler.h"
 
 // --- ✨ A new struct to record every single attempt! ✨ ---
 struct AttemptRecord {
@@ -23,8 +24,10 @@ struct FlashcardProgress {
     QString cardId;
     QString frontText; // So you can read the word in the file!
     QString frontExample; // We added this to save the example!
+    QString frontAudio;
     QString backText;  // So you can read the translation!
     QString backExample; // And this to save the back example!
+    QString backAudio;
     int box = 1;
     QDateTime nextReviewDate;
     QList<AttemptRecord> attempts; // A full history of every try!
@@ -43,12 +46,14 @@ public:
     int totalSessionCards() const;
     
     const FlashcardProgress* getCardProgress(const QString& cardId) const;
+    QString getKvtmlDirectory() const; // ✨ Add this!
 
 private:
     void loadProgress();
     void saveProgress();
 
     QString progressFilePath;
+    QString m_kvtmlDir; // ✨ Our little secret location keeper!
     QList<Flashcard> allCards;
     QMap<QString, FlashcardProgress> progressMap;
     QList<Flashcard> sessionQueue;
