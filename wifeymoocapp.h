@@ -92,6 +92,7 @@ private:
     bool loadQuestionsFromFile(const QString &filePath);
     bool loadProgressFromFile(const QString &filePath);
     bool saveProgressToFile(const QString &filePath);
+    // ✨ This function is now smarter! ✨
     QString resolveMediaPath(const QString &path);
     void loadParleyFile(const QString& filePath); // <-- Already here!
     void resetScrollArea();
