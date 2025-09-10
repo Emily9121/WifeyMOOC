@@ -497,26 +497,7 @@ bool WifeyMOOCApp::loadQuestionsFromFile(const QString &filePath)
     
     m_questions = doc.array();
     m_currentQuestionFile = filePath;
-    QString realFilePath = filePath;
-    #if defined(Q_OS_ANDROID)
-        if (realFilePath.startsWith("content://")) {
-            QJniObject pathString = QJniObject::fromString(realFilePath);
-            QJniObject javaClass("net/wifey/wifeymooc/WifeyUtils");
-
-            // This is the corrected way to call the Java function and get the string back
-            QJniObject translatedPath = javaClass.callStaticObjectMethod(
-                "getPathFromUri",
-                "(Landroid/content/Context;Ljava/lang/String;)Ljava/lang/String;",
-                QCoreApplication::instance()->property("androidActivity").value<QJniObject>().object(),
-                pathString.object<jstring>()
-                );
-
-            if (translatedPath.isValid()) {
-                realFilePath = translatedPath.toString();
-            }
-        }
-    #endif
-    m_jsonDir = QFileInfo(realFilePath).absolutePath();
+    m_jsonDir = QFileInfo(filePath).absolutePath();
     m_currentQuestion = 0;
     m_score = 0;
     m_studentAnswers.clear();
