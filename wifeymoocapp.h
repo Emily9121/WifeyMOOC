@@ -104,6 +104,9 @@ private:
     // Android Permission
     void requestStoragePermission(); // ✨ Add this beautiful line! ✨
 
+    // I like burgies
+    QToolBar *m_toolbar; // ✨ Our new toolbar!
+
 
     // UI Components
     QWidget *m_centralWidget;

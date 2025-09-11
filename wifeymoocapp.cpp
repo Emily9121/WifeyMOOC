@@ -21,6 +21,7 @@
 #include <QInputDialog>
 #include <QDebug>
 #include <QCoreApplication>
+#include <QToolBar> // ✨💖 Add this magical line right here, sweetie! 💖✨
 // --- ✨ Correct Android Include ✨ ---
 #if defined(Q_OS_ANDROID)
 #include <QJniObject>
@@ -105,6 +106,12 @@ void WifeyMOOCApp::setupUI()
     m_mainLayout->setSpacing(10);
     m_mainLayout->setContentsMargins(10, 10, 10, 10);
 
+    // Android burgies
+    #if defined(Q_OS_ANDROID)
+        m_toolbar = addToolBar("Main Toolbar");
+        m_toolbar->setMovable(false);
+    #endif
+
     m_questionLabel = new QLabel;
     m_questionLabel->setFont(QFont("Arial", 14, QFont::Bold));
     m_questionLabel->setWordWrap(true);
@@ -183,14 +190,32 @@ void WifeyMOOCApp::setupUI()
         m_buttonLayout->addWidget(m_skipButton);
     }
 
+    #if defined(Q_OS_ANDROID)
+        m_submitButton->setMinimumHeight(60);
+        m_nextButton->setMinimumHeight(60);
+        if (m_skipButton) m_skipButton->setMinimumHeight(60);
+        m_altImageButton->setMinimumHeight(60);
+        m_hintButton->setMinimumHeight(60);
+        m_lessonButton->setMinimumHeight(60);
+    #endif
+
     m_mainLayout->addWidget(m_buttonPanel);
 }
 
 void WifeyMOOCApp::setupMenuBar()
 {
-    QMenuBar *menuBar = this->menuBar();
+    //QMenuBar *menuBar = this->menuBar();
 
-    QMenu *fileMenu = menuBar->addMenu("&File");
+    QMenu *fileMenu;
+
+    #if defined(Q_OS_ANDROID)
+        fileMenu = new QMenu(this);
+        QAction *menuAction = m_toolbar->addAction("☰");
+        menuAction->setMenu(fileMenu);
+    #else
+        QMenuBar *menuBar = this->menuBar();
+        fileMenu = menuBar->addMenu("&File");
+    #endif
 
     QAction *loadQuestionsAction = fileMenu->addAction("&Load Questions");
     loadQuestionsAction->setShortcut(QKeySequence::Open);

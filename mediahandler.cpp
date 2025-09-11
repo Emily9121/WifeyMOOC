@@ -15,6 +15,9 @@
 #include <QGraphicsView>
 #include <QGraphicsScene>
 #include <QGraphicsVideoItem>
+#include <QGuiApplication>
+#include <QScreen>
+#include <QMainWindow>
 
 int MediaHandler::s_videoWidth = 1280;
 int MediaHandler::s_videoHeight = 720;
@@ -37,9 +40,6 @@ MediaHandler::~MediaHandler()
     if (m_mediaPlayer) {
         m_mediaPlayer->stop();
     }
-    // Do NOT manually delete m_videoWidget!
-    // Qt will delete it when its parent is deleted.
-    // Just set the pointer to nullptr here for clarity.
     m_videoWidget = nullptr;
 }
 
@@ -253,7 +253,6 @@ void MediaHandler::embedAudioPlayer(const QString &audioPath, QWidget *parent)
     container->update();
 }
 
-
 // -------- VIDEO PLAYER --------
 void MediaHandler::embedVideoPlayer(const QString &videoPath, QWidget *parent, int width, int height)
 {
@@ -263,42 +262,91 @@ void MediaHandler::embedVideoPlayer(const QString &videoPath, QWidget *parent, i
         return;
     }
 
-    // Delete previous video widget container if any
     if (m_videoWidget) {
+        m_videoWidget->deleteLater();
         m_videoWidget = nullptr;
     }
 
-    // Create container for video UI
+#if defined(Q_OS_ANDROID)
+    QWidget *container = new QWidget(parent);
+    QVBoxLayout *layout = new QVBoxLayout(container);
+    layout->setContentsMargins(0, 0, 0, 0);
+
+    QVideoWidget *videoWidget = new QVideoWidget(container);
+    
+    QScreen *screen = QGuiApplication::primaryScreen();
+    int screenWidth = screen->availableGeometry().width() - 20;
+    int videoHeight = screenWidth * 9 / 16;
+    videoWidget->setFixedSize(screenWidth, videoHeight);
+    
+    layout->addWidget(videoWidget, 0, Qt::AlignCenter);
+    m_mediaPlayer->setVideoOutput(videoWidget);
+
+    // --- Controls ---
+    QWidget *controlsContainer = new QWidget(container);
+    QHBoxLayout *controlsLayout = new QHBoxLayout(controlsContainer);
+    
+    QPushButton *playBtn = new QPushButton("▶", controlsContainer);
+    playBtn->setStyleSheet("font-size: 20pt; border: none; background-color: transparent;");
+    QPushButton *pauseBtn = new QPushButton("⏸", controlsContainer);
+    pauseBtn->setStyleSheet("font-size: 20pt; border: none; background-color: transparent;");
+    QSlider *seekBar = new QSlider(Qt::Horizontal, controlsContainer);
+    
+    controlsLayout->addWidget(playBtn);
+    controlsLayout->addWidget(pauseBtn);
+    controlsLayout->addWidget(seekBar, 1);
+    layout->addWidget(controlsContainer);
+    
+    // --- Connections ---
+    connect(playBtn, &QPushButton::clicked, m_mediaPlayer, &QMediaPlayer::play);
+    connect(pauseBtn, &QPushButton::clicked, m_mediaPlayer, &QMediaPlayer::pause);
+    connect(m_mediaPlayer, &QMediaPlayer::durationChanged, seekBar, &QSlider::setMaximum);
+    connect(m_mediaPlayer, &QMediaPlayer::positionChanged, seekBar, &QSlider::setValue);
+    connect(seekBar, &QSlider::sliderMoved, m_mediaPlayer, &QMediaPlayer::setPosition);
+
+    connect(container, &QWidget::destroyed, this, [=]() {
+        if(m_mediaPlayer->videoOutput() == videoWidget) {
+            m_mediaPlayer->stop();
+            m_mediaPlayer->setVideoOutput(nullptr);
+        }
+    });
+
+    QVBoxLayout *parentLayout = qobject_cast<QVBoxLayout *>(parent->layout());
+    if (!parentLayout) parentLayout = new QVBoxLayout(parent);
+    parentLayout->addWidget(container);
+
+    m_mediaPlayer->setSource(QUrl::fromLocalFile(resolvedPath));
+    m_videoWidget = container;
+
+#else
+    // Desktop video player code
     QWidget *container = new QWidget(parent);
     QVBoxLayout *layout = new QVBoxLayout(container);
 
-#ifdef Q_OS_MAC
-    QVideoWidget *videoWidget = new QVideoWidget(container);
-    videoWidget->setMinimumSize(width, height);
-    videoWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    layout->addWidget(videoWidget, 15);
-    m_mediaPlayer->setVideoOutput(videoWidget);
-#else
-    QGraphicsView *graphicsView = new QGraphicsView(container);
-    QGraphicsScene *scene = new QGraphicsScene(graphicsView);
-    QGraphicsVideoItem *videoItem = new QGraphicsVideoItem();
-    scene->addItem(videoItem);
-    videoItem->setSize(QSizeF(width, height));
-    graphicsView->setScene(scene);
-    graphicsView->setMinimumSize(width, height);
-    graphicsView->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    layout->addWidget(graphicsView, 15);
-    m_mediaPlayer->setVideoOutput(videoItem);
-#endif
+    #ifdef Q_OS_MAC
+        QVideoWidget *videoWidget = new QVideoWidget(container);
+        videoWidget->setMinimumSize(width, height);
+        videoWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+        layout->addWidget(videoWidget, 15);
+        m_mediaPlayer->setVideoOutput(videoWidget);
+    #else
+        QGraphicsView *graphicsView = new QGraphicsView(container);
+        QGraphicsScene *scene = new QGraphicsScene(graphicsView);
+        QGraphicsVideoItem *videoItem = new QGraphicsVideoItem();
+        scene->addItem(videoItem);
+        videoItem->setSize(QSizeF(width, height));
+        graphicsView->setScene(scene);
+        graphicsView->setMinimumSize(width, height);
+        graphicsView->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+        layout->addWidget(graphicsView, 15);
+        m_mediaPlayer->setVideoOutput(videoItem);
+    #endif
 
-    // Playback controls layout
     QHBoxLayout *controls = new QHBoxLayout();
-
     QPushButton *playBtn = new QPushButton("▶", container);
     QPushButton *pauseBtn = new QPushButton("⏸", container);
     QSlider *seekBar = new QSlider(Qt::Horizontal, container);
     seekBar->setRange(0, 0);
-
     QSlider *volumeSlider = new QSlider(Qt::Horizontal, container);
     volumeSlider->setRange(0, 100);
     volumeSlider->setValue(int(m_audioOutput->volume() * 100));
@@ -314,19 +362,11 @@ void MediaHandler::embedVideoPlayer(const QString &videoPath, QWidget *parent, i
     connect(playBtn, &QPushButton::clicked, m_mediaPlayer, &QMediaPlayer::play);
     connect(pauseBtn, &QPushButton::clicked, m_mediaPlayer, &QMediaPlayer::pause);
     connect(volumeSlider, &QSlider::valueChanged, [this](int value){ m_audioOutput->setVolume(value / 100.0f); });
-
-    connect(m_mediaPlayer, &QMediaPlayer::mediaStatusChanged, seekBar, [seekBar, this]() {
-        seekBar->setMaximum(m_mediaPlayer->duration());
-        seekBar->setEnabled(m_mediaPlayer->duration() > 0);
-        seekBar->setValue(m_mediaPlayer->position());
-    });
-
     connect(m_mediaPlayer, &QMediaPlayer::durationChanged, seekBar, &QSlider::setMaximum);
     connect(m_mediaPlayer, &QMediaPlayer::positionChanged, seekBar, &QSlider::setValue);
     connect(seekBar, &QSlider::sliderMoved, m_mediaPlayer, &QMediaPlayer::setPosition);
 
     layout->addLayout(controls, 1);
-
     m_mediaPlayer->setSource(QUrl::fromLocalFile(resolvedPath));
 
     QVBoxLayout *parentLayout = qobject_cast<QVBoxLayout *>(parent->layout());
@@ -334,14 +374,13 @@ void MediaHandler::embedVideoPlayer(const QString &videoPath, QWidget *parent, i
     parentLayout->addWidget(container);
     container->show();
     container->update();
-
     m_videoWidget = container;
 
     QPushButton *fullscreenBtn = new QPushButton("⛶ Fullscreen", container);
     controls->addWidget(fullscreenBtn);
 
     connect(fullscreenBtn, &QPushButton::clicked, container, [=]() {
-#ifdef Q_OS_MAC
+    #ifdef Q_OS_MAC
         QDialog *dialog = new QDialog(container);
         dialog->setWindowTitle("Fullscreen Video");
         dialog->setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
@@ -352,42 +391,31 @@ void MediaHandler::embedVideoPlayer(const QString &videoPath, QWidget *parent, i
         vbox->addWidget(fsVideoWidget);
         m_mediaPlayer->setVideoOutput(fsVideoWidget);
         dialog->showFullScreen();
-
         connect(dialog, &QDialog::finished, container, [=]() {
             m_mediaPlayer->setVideoOutput(videoWidget);
         });
-#else
-        // Non-Mac fullscreen logic: show video in fullscreen QGraphicsView
+    #else
         QDialog *dialog = new QDialog(container);
         dialog->setWindowTitle("Fullscreen Video");
         dialog->setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
         dialog->setAttribute(Qt::WA_DeleteOnClose);
-
-        QScreen *screen = QApplication::primaryScreen();
+        QScreen *screen = QGuiApplication::primaryScreen();
         QRect screenRect = screen->geometry();
         dialog->resize(screenRect.size());
-
         QVBoxLayout *vbox = new QVBoxLayout(dialog);
         vbox->setContentsMargins(0, 0, 0, 0);
-
         QGraphicsView *fsView = new QGraphicsView(dialog);
         fsView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
         fsView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
         fsView->setFrameShape(QFrame::NoFrame);
-
         QGraphicsScene *fsScene = new QGraphicsScene(fsView);
         QGraphicsVideoItem *fsVideoItem = new QGraphicsVideoItem();
         fsScene->addItem(fsVideoItem);
         fsView->setScene(fsScene);
         fsView->setAlignment(Qt::AlignCenter);
         fsView->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-
         vbox->addWidget(fsView);
-
-        // Set new video output
         m_mediaPlayer->setVideoOutput(fsVideoItem);
-
-        // Sync size when resized
         struct ResizeSync : public QObject {
             QGraphicsVideoItem *item;
             QGraphicsView *view;
@@ -399,24 +427,19 @@ void MediaHandler::embedVideoPlayer(const QString &videoPath, QWidget *parent, i
                 return QObject::eventFilter(obj, event);
             }
         };
-
         auto resizeSync = new ResizeSync(fsVideoItem, fsView);
         fsView->viewport()->installEventFilter(resizeSync);
         fsVideoItem->setSize(QSizeF(fsView->viewport()->size()));
-
         dialog->showFullScreen();
-
-        // Restore to original video output on close
         connect(dialog, &QDialog::finished, container, [=]() {
             m_mediaPlayer->setVideoOutput(videoItem);
             resizeSync->deleteLater();
         });
-
-        // Escape key closes fullscreen dialog
         dialog->installEventFilter(container);
         container->setProperty("fullscreen_dialog", QVariant::fromValue(dialog));
-#endif
+    #endif
     });
+#endif
 }
 
 void MediaHandler::createImagePreviewDialog(const QString &imagePath, QWidget *parent)
@@ -425,6 +448,10 @@ void MediaHandler::createImagePreviewDialog(const QString &imagePath, QWidget *p
     dialog->setWindowTitle("Image Preview");
     dialog->setModal(false);
     dialog->setAttribute(Qt::WA_DeleteOnClose);
+
+    #if defined(Q_OS_ANDROID)
+        dialog->setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
+    #endif
 
     QPixmap pixmap(imagePath);
     if (pixmap.isNull()) {
@@ -440,15 +467,14 @@ void MediaHandler::createImagePreviewDialog(const QString &imagePath, QWidget *p
 
     QLabel *imageLabel = new QLabel;
     imageLabel->setPixmap(pixmap);
-    imageLabel->setScaledContents(false); // WE DO NOT want DSTRETCH
+    imageLabel->setScaledContents(false);
     scrollArea->setWidget(imageLabel);
 
     QVBoxLayout *layout = new QVBoxLayout(dialog);
     layout->addWidget(scrollArea);
 
-    bool *scaledMode = new bool(true); // true = scaled-to-window, false = 1:1
+    bool *scaledMode = new bool(true);
 
-    // Helper to show the pixmap at the right size/aspect.
     auto fitLabelToViewport = [=]() {
         if (*scaledMode) {
             QSize avail = scrollArea->viewport()->size();
@@ -463,7 +489,6 @@ void MediaHandler::createImagePreviewDialog(const QString &imagePath, QWidget *p
         }
     };
 
-    // Event filter for resizing (scrollArea viewport)
     class ViewportResizeFilter : public QObject {
         std::function<void()> updateFn;
     public:
@@ -478,7 +503,6 @@ void MediaHandler::createImagePreviewDialog(const QString &imagePath, QWidget *p
     };
     scrollArea->viewport()->installEventFilter(new ViewportResizeFilter(fitLabelToViewport, scrollArea->viewport()));
 
-    // Toggle mode on image click
     class ToggleFilter : public QObject {
         std::function<void()> updateFn;
         bool *mode;
@@ -497,19 +521,34 @@ void MediaHandler::createImagePreviewDialog(const QString &imagePath, QWidget *p
     imageLabel->setCursor(Qt::PointingHandCursor);
     imageLabel->installEventFilter(new ToggleFilter(fitLabelToViewport, scaledMode, imageLabel));
 
-    // Initial sizing
-    QSize screen = QApplication::primaryScreen()->availableGeometry().size();
-    int maxW = qMin(pixmap.width() + 50, int(screen.width() * 0.9));
-    int maxH = qMin(pixmap.height() + 50, int(screen.height() * 0.9));
-    dialog->resize(maxW, maxH);
-    fitLabelToViewport();
+    #if defined(Q_OS_ANDROID)
+        // This is a super cute trick to make the whole image a close button!
+        class ClickToCloseFilter : public QObject {
+            QDialog* m_dialog;
+        public:
+            ClickToCloseFilter(QDialog* d, QObject* p) : QObject(p), m_dialog(d) {}
+            bool eventFilter(QObject*, QEvent* event) override {
+                if(event->type() == QEvent::MouseButtonRelease) {
+                    m_dialog->accept();
+                    return true;
+                }
+                return false;
+            }
+        };
+        imageLabel->installEventFilter(new ClickToCloseFilter(dialog, imageLabel));
+        dialog->showFullScreen();
+    #else
+        QSize screen = QGuiApplication::primaryScreen()->availableGeometry().size();
+        int maxW = qMin(pixmap.width() + 50, int(screen.width() * 0.9));
+        int maxH = qMin(pixmap.height() + 50, int(screen.height() * 0.9));
+        dialog->resize(maxW, maxH);
+        fitLabelToViewport();
+        dialog->show();
+    #endif
 
-    dialog->show();
     dialog->raise();
     dialog->activateWindow();
 }
-
-
 
 bool MediaHandler::eventFilter(QObject *object, QEvent *event)
 {
