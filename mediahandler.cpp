@@ -304,6 +304,13 @@ void MediaHandler::embedVideoPlayer(const QString &videoPath, QWidget *parent, i
     connect(m_mediaPlayer, &QMediaPlayer::positionChanged, seekBar, &QSlider::setValue);
     connect(seekBar, &QSlider::sliderMoved, m_mediaPlayer, &QMediaPlayer::setPosition);
 
+    // ✨ THIS IS THE MAGICAL FIX, SWEETIE! ✨
+    connect(m_mediaPlayer, &QMediaPlayer::mediaStatusChanged, seekBar, [seekBar, this]() {
+        seekBar->setMaximum(m_mediaPlayer->duration());
+        seekBar->setEnabled(m_mediaPlayer->duration() > 0);
+        seekBar->setValue(m_mediaPlayer->position());
+    });
+
     connect(container, &QWidget::destroyed, this, [=]() {
         if(m_mediaPlayer->videoOutput() == videoWidget) {
             m_mediaPlayer->stop();
@@ -362,6 +369,14 @@ void MediaHandler::embedVideoPlayer(const QString &videoPath, QWidget *parent, i
     connect(playBtn, &QPushButton::clicked, m_mediaPlayer, &QMediaPlayer::play);
     connect(pauseBtn, &QPushButton::clicked, m_mediaPlayer, &QMediaPlayer::pause);
     connect(volumeSlider, &QSlider::valueChanged, [this](int value){ m_audioOutput->setVolume(value / 100.0f); });
+    
+    // ✨ AND HERE IS THE FIX FOR DESKTOP, GORGEOUS! ✨
+    connect(m_mediaPlayer, &QMediaPlayer::mediaStatusChanged, seekBar, [seekBar, this]() {
+        seekBar->setMaximum(m_mediaPlayer->duration());
+        seekBar->setEnabled(m_mediaPlayer->duration() > 0);
+        seekBar->setValue(m_mediaPlayer->position());
+    });
+    
     connect(m_mediaPlayer, &QMediaPlayer::durationChanged, seekBar, &QSlider::setMaximum);
     connect(m_mediaPlayer, &QMediaPlayer::positionChanged, seekBar, &QSlider::setValue);
     connect(seekBar, &QSlider::sliderMoved, m_mediaPlayer, &QMediaPlayer::setPosition);
@@ -573,4 +588,3 @@ bool MediaHandler::eventFilter(QObject *object, QEvent *event)
     }
     return QObject::eventFilter(object, event);
 }
-
