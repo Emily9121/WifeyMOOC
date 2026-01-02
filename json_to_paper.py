@@ -836,7 +836,8 @@ class ExerciseToPaper:
     def _render_categorization_docx(self, doc: Document, exercise: Dict):
         """Render categorization in DOCX"""
         categories = exercise.get('categories', [])
-        doc.add_paragraph(f"Categories: {', '.join(c for c in categories if c.strip())}", style='Heading 4')
+        cat_text = ', '.join(c for c in categories if c.strip())
+        doc.add_paragraph(f"Categories: {cat_text}", style='Heading 4')
         
         stimuli = exercise.get('stimuli', [])
         for stimulus in stimuli:
@@ -1133,20 +1134,21 @@ class ExerciseToPaper:
         """Render categorization for HTML"""
         html = '<div>\n'
         categories = exercise.get('categories', [])
-        html += f'<div class="category-list"><strong>Categories:</strong> {\", \".join(c for c in categories if c.strip())}</div>\n'
+        cat_text = ', '.join(c for c in categories if c.strip())
+        html += f'<div class="category-list"><strong>Categories:</strong> {cat_text}</div>\n'
         
         for stimulus in exercise.get('stimuli', []):
             html += '<div class="categorization-item">\n'
             
             if stimulus.get('text'):
-                html += f'<div class="categorization-text">{stimulus[\"text\"]}</div>\n'
+                html += f'<div class="categorization-text">{stimulus["text"]}</div>\n'
             
             if stimulus.get('image'):
                 data_uri = self._load_image_as_base64(stimulus['image'])
                 if data_uri:
                     html += f'<img src="{data_uri}" alt="stimulus">\n'
             
-            html += f'<div class="categorization-input">Category: ___________</div>\n'
+            html += '<div class="categorization-input">Category: ___________</div>\n'
             html += '</div>\n'
         
         html += '</div>\n'
@@ -1188,11 +1190,13 @@ class ExerciseToPaper:
             if data_uri:
                 html += f'<div class="media-image"><img src="{data_uri}" alt="tagging"></div>\n'
         
-        html += f'<div class="category-list"><strong>Button:</strong> {exercise.get(\"button_label\", \"N/A\")}</div>\n'
+        button_label = exercise.get('button_label', 'N/A')
+        html += f'<div class="category-list"><strong>Button:</strong> {button_label}</div>\n'
         html += '<div class="category-list"><strong>Label with:</strong>\n'
         
         for tag in exercise.get('tags', []):
-            html += f'• {tag.get(\"label\", \"N/A\")}<br>\n'
+            label = tag.get('label', 'N/A')
+            html += f'• {label}<br>\n'
         
         html += '</div>\n</div>\n'
         return html
@@ -1202,7 +1206,8 @@ class ExerciseToPaper:
         html = '<div class="pairs-list">\n'
         
         for q_idx, question in enumerate(exercise.get('questions', []), 1):
-            html += f'<div class="pair"><div class="pair-source">Q{q_idx}: {question.get(\"question\", \"N/A\")}</div><div class="pair-target">_________</div></div>\n'
+            q_text = question.get('question', 'N/A')
+            html += f'<div class="pair"><div class="pair-source">Q{q_idx}: {q_text}</div><div class="pair-target">_________</div></div>\n'
         
         html += '</div>\n'
         return html
