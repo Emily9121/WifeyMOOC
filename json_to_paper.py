@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 WifeyMOOC JSON to Paper Exercise Printer
-Converts exercise JSON files into printable HTML format (print to PDF manually)
+Converts exercise JSON files into printable HTML + DOCX format
 """
 
 import json
@@ -12,6 +12,17 @@ import random
 from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Any, Tuple
+
+# Try to import python-docx, but make it optional
+try:
+    from docx import Document
+    from docx.shared import Inches, Pt, RGBColor
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.oxml.ns import qn
+    from docx.oxml import OxmlElement
+    HAS_DOCX = True
+except ImportError:
+    HAS_DOCX = False
 
 class ExerciseToPaper:
     def __init__(self, json_file: str):
@@ -67,6 +78,13 @@ class ExerciseToPaper:
         except Exception as e:
             print(f"⚠️  Warning: Could not load image {image_path} - {e}")
             return None
+    
+    def _get_image_path(self, image_path: str) -> Path:
+        """Get the actual path to an image file"""
+        full_path = self.base_dir / image_path
+        if not full_path.exists():
+            full_path = Path(image_path)
+        return full_path if full_path.exists() else None
     
     def generate_html(self, output_file: str = None) -> str:
         """Generate HTML document for printing"""
@@ -495,8 +513,66 @@ class ExerciseToPaper:
         print(f"✓ HTML worksheet saved to: {output_file}")
         return output_file
     
+    def generate_docx(self, output_file: str = None) -> str:
+        """Generate DOCX document for editing"""
+        if not HAS_DOCX:
+            print("⚠️  Warning: python-docx not installed. Install with: pip install python-docx")
+            return None
+        
+        if output_file is None:
+            output_file = Path(self.json_file).stem + "_paper.docx"
+        
+        doc = Document()
+        
+        # Set up A4 page size
+        section = doc.sections[0]
+        section.page_height = Inches(11.7)
+        section.page_width = Inches(8.3)
+        section.top_margin = Inches(0.75)
+        section.bottom_margin = Inches(0.75)
+        section.left_margin = Inches(0.75)
+        section.right_margin = Inches(0.75)
+        
+        # Add header
+        title = doc.add_paragraph()
+        title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        title_run = title.add_run("📚 WifeyMOOC Worksheet")
+        title_run.font.size = Pt(24)
+        title_run.font.bold = True
+        title_run.font.color.rgb = RGBColor(44, 62, 80)
+        
+        subtitle = doc.add_paragraph()
+        subtitle.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        subtitle_run = subtitle.add_run(f"Exercise Set • Generated on {datetime.now().strftime('%B %d, %Y')}")
+        subtitle_run.font.size = Pt(11)
+        subtitle_run.font.color.rgb = RGBColor(127, 140, 141)
+        
+        doc.add_paragraph()  # Spacing
+        
+        # First pass: collect full-page images
+        self._collect_full_page_images()
+        
+        # Add exercises
+        for idx, exercise in enumerate(self.exercises, 1):
+            self._exercise_to_docx(doc, exercise, idx)
+        
+        # Add page break before reference images
+        if self.full_page_images:
+            doc.add_page_break()
+            self._generate_full_page_images_docx(doc)
+        
+        # Add page break before answer key
+        doc.add_page_break()
+        self._generate_answers_docx(doc)
+        
+        # Save to file
+        doc.save(output_file)
+        print(f"✓ DOCX worksheet saved to: {output_file}")
+        return output_file
+    
     def _collect_full_page_images(self):
         """Collect images from simple types (MCQ, list_pick, etc.) for full-page rendering"""
+        self.full_page_images = {}  # Reset
         for idx, exercise in enumerate(self.exercises, 1):
             ex_type = exercise.get('type', '')
             # Only collect images from simple question types
@@ -576,8 +652,360 @@ class ExerciseToPaper:
         html += '</div>\n'
         return html
     
+    def _exercise_to_docx(self, doc: Document, exercise: Dict[str, Any], number: int):
+        """Convert individual exercise to DOCX"""
+        ex_type = exercise.get('type', 'unknown')
+        
+        # Add exercise header
+        header = doc.add_paragraph()
+        q_num = header.add_run(f"Q{number}")
+        q_num.font.size = Pt(11)
+        q_num.font.bold = True
+        q_num.font.color.rgb = RGBColor(52, 152, 219)
+        
+        q_type = header.add_run(f" [{ex_type.upper()}]")
+        q_type.font.size = Pt(10)
+        q_type.font.color.rgb = RGBColor(44, 62, 80)
+        
+        # Add question
+        q_para = doc.add_paragraph(exercise.get('question', 'N/A'))
+        q_para.style = 'Normal'
+        q_run = q_para.runs[0]
+        q_run.font.size = Pt(11)
+        q_run.font.bold = True
+        q_run.font.color.rgb = RGBColor(44, 62, 80)
+        
+        # Handle media
+        if exercise.get('media'):
+            media = exercise['media']
+            if isinstance(media, dict):
+                if 'video' in media:
+                    note = doc.add_paragraph(f"🎥 Video: {media['video']}")
+                    self._style_note_paragraph(note)
+                if 'audio' in media:
+                    note = doc.add_paragraph(f"🔊 Audio: {media['audio']}")
+                    self._style_note_paragraph(note)
+                if 'image' in media:
+                    # Check if should reference or embed
+                    if ex_type in ['mcq_single', 'mcq_multiple', 'list_pick', 'fill_blanks_dropdown',
+                                  'word_fill', 'sequence_audio', 'order_phrase']:
+                        # Reference full-page image
+                        image_filename = Path(media['image']).name
+                        note = doc.add_paragraph(f"📄 See image \"{image_filename}\" on the reference page")
+                        self._style_note_paragraph(note)
+                    elif ex_type not in ['match_sentence', 'image_tagging']:
+                        # Embed image
+                        self._add_image_to_docx(doc, media['image'])
+        
+        # Type-specific rendering
+        if ex_type == 'mcq_single':
+            self._render_mcq_single_docx(doc, exercise)
+        elif ex_type == 'mcq_multiple':
+            self._render_mcq_multiple_docx(doc, exercise)
+        elif ex_type == 'list_pick':
+            self._render_list_pick_docx(doc, exercise)
+        elif ex_type == 'fill_blanks_dropdown':
+            self._render_fill_blanks_docx(doc, exercise)
+        elif ex_type == 'match_phrases':
+            self._render_match_phrases_docx(doc, exercise)
+        elif ex_type == 'match_sentence':
+            self._render_match_sentence_docx(doc, exercise)
+        elif ex_type == 'order_phrase':
+            self._render_order_phrase_docx(doc, exercise)
+        elif ex_type == 'categorization_multiple':
+            self._render_categorization_docx(doc, exercise)
+        elif ex_type == 'word_fill':
+            self._render_word_fill_docx(doc, exercise)
+        elif ex_type == 'sequence_audio':
+            self._render_sequence_docx(doc, exercise)
+        elif ex_type == 'image_tagging':
+            self._render_image_tagging_docx(doc, exercise)
+        elif ex_type == 'multi_questions':
+            self._render_multi_questions_docx(doc, exercise)
+        
+        doc.add_paragraph()  # Spacing
+    
+    def _style_note_paragraph(self, para):
+        """Style a note paragraph"""
+        para.style = 'Normal'
+        for run in para.runs:
+            run.font.size = Pt(10)
+            run.font.italic = True
+            run.font.color.rgb = RGBColor(133, 100, 4)
+    
+    def _add_image_to_docx(self, doc: Document, image_path: str, width: float = 5.0):
+        """Add an image to DOCX document"""
+        try:
+            full_path = self._get_image_path(image_path)
+            if full_path:
+                doc.add_picture(str(full_path), width=Inches(width))
+            else:
+                doc.add_paragraph(f"[Image not found: {image_path}]")
+        except Exception as e:
+            doc.add_paragraph(f"[Could not add image: {image_path}]")
+    
+    def _render_mcq_single_docx(self, doc: Document, exercise: Dict):
+        """Render MCQ single choice in DOCX"""
+        for option in exercise.get('options', []):
+            p = doc.add_paragraph(option, style='List Bullet')
+            p.paragraph_format.left_indent = Inches(0.3)
+    
+    def _render_mcq_multiple_docx(self, doc: Document, exercise: Dict):
+        """Render MCQ multiple choice in DOCX"""
+        for option in exercise.get('options', []):
+            p = doc.add_paragraph(option, style='List Bullet')
+            p.paragraph_format.left_indent = Inches(0.3)
+    
+    def _render_list_pick_docx(self, doc: Document, exercise: Dict):
+        """Render list pick in DOCX"""
+        for option in exercise.get('options', []):
+            p = doc.add_paragraph(option, style='List Bullet')
+            p.paragraph_format.left_indent = Inches(0.3)
+    
+    def _render_fill_blanks_docx(self, doc: Document, exercise: Dict):
+        """Render fill blanks in DOCX"""
+        parts = exercise.get('sentence_parts', [])
+        p = doc.add_paragraph()
+        for part in parts:
+            p.add_run(part)
+        
+        for idx in range(len(exercise.get('options_for_blanks', []))):
+            blank = doc.add_paragraph()
+            blank.add_run(f"Blank {idx+1}: ").bold = True
+            blank.add_run("_" * 20)
+    
+    def _render_match_phrases_docx(self, doc: Document, exercise: Dict):
+        """Render match phrases in DOCX"""
+        doc.add_paragraph("Match the phrases:", style='Heading 4')
+        pairs = exercise.get('pairs', [])
+        for pair in pairs:
+            source = pair.get('source', '')
+            p = doc.add_paragraph()
+            p.add_run(source).bold = True
+            p.add_run("  " + "_" * 20)
+    
+    def _render_match_sentence_docx(self, doc: Document, exercise: Dict):
+        """Render match sentence in DOCX"""
+        pairs = exercise.get('pairs', [])
+        
+        # Shuffle and display images
+        images_with_indices = [(idx, pair.get('image_path', '')) for idx, pair in enumerate(pairs)]
+        random_order = list(range(len(pairs)))
+        random.shuffle(random_order)
+        shuffled_images = [images_with_indices[i] for i in random_order]
+        
+        doc.add_paragraph("Images:", style='Heading 4')
+        for label_idx, (orig_idx, image_path) in enumerate(shuffled_images):
+            full_path = self._get_image_path(image_path)
+            if full_path:
+                label = chr(65 + label_idx)
+                p = doc.add_paragraph(f"({label}) ", style='Normal')
+                try:
+                    doc.add_picture(str(full_path), width=Inches(2.0))
+                except:
+                    pass
+        
+        doc.add_paragraph("Match sentences with images:", style='Heading 4')
+        for idx, pair in enumerate(pairs, 1):
+            sentence = pair.get('sentence', '')
+            p = doc.add_paragraph()
+            p.add_run(f"{idx}. {sentence}").bold = True
+            p.add_run("  " + "_" * 15)
+    
+    def _render_order_phrase_docx(self, doc: Document, exercise: Dict):
+        """Render order phrase in DOCX"""
+        doc.add_paragraph("Order the sentences:", style='Heading 4')
+        for idx, phrase in enumerate(exercise.get('phrase_shuffled', []), 1):
+            p = doc.add_paragraph()
+            p.add_run("__ ").bold = True
+            p.add_run(f"{idx}. {phrase}")
+    
+    def _render_categorization_docx(self, doc: Document, exercise: Dict):
+        """Render categorization in DOCX"""
+        categories = exercise.get('categories', [])
+        doc.add_paragraph(f"Categories: {', '.join(c for c in categories if c.strip())}", style='Heading 4')
+        
+        stimuli = exercise.get('stimuli', [])
+        for stimulus in stimuli:
+            text = stimulus.get('text', '')
+            image = stimulus.get('image', '')
+            
+            if text:
+                p = doc.add_paragraph(text)
+            
+            if image:
+                self._add_image_to_docx(doc, image, width=3.0)
+            
+            p = doc.add_paragraph()
+            p.add_run("Category: ").bold = True
+            p.add_run("_" * 15)
+            doc.add_paragraph()  # Spacing
+    
+    def _render_word_fill_docx(self, doc: Document, exercise: Dict):
+        """Render word fill in DOCX"""
+        parts = exercise.get('sentence_parts', [])
+        p = doc.add_paragraph()
+        for part in parts:
+            p.add_run(part)
+        
+        for idx in range(len(exercise.get('answers', []))):
+            blank = doc.add_paragraph()
+            blank.add_run(f"Answer {idx+1}: ").bold = True
+            blank.add_run("_" * 20)
+    
+    def _render_sequence_docx(self, doc: Document, exercise: Dict):
+        """Render sequence in DOCX"""
+        doc.add_paragraph("Put items in order:", style='Heading 4')
+        options = exercise.get('audio_options', [])
+        for idx, option in enumerate(options, 1):
+            opt_text = option.get('option', f'Item {idx}') if isinstance(option, dict) else option
+            p = doc.add_paragraph()
+            p.add_run("__ ").bold = True
+            p.add_run(opt_text)
+    
+    def _render_image_tagging_docx(self, doc: Document, exercise: Dict):
+        """Render image tagging in DOCX"""
+        media = exercise.get('media', {})
+        image_path = media.get('image', '')
+        
+        if image_path:
+            self._add_image_to_docx(doc, image_path, width=5.0)
+        
+        doc.add_paragraph(f"Button: {exercise.get('button_label', 'N/A')}", style='Heading 4')
+        doc.add_paragraph("Label the diagram with:")
+        
+        tags = exercise.get('tags', [])
+        for tag in tags:
+            doc.add_paragraph(tag.get('label', 'N/A'), style='List Bullet')
+    
+    def _render_multi_questions_docx(self, doc: Document, exercise: Dict):
+        """Render multi questions in DOCX"""
+        doc.add_paragraph("Sub-questions:", style='Heading 4')
+        for q_idx, question in enumerate(exercise.get('questions', []), 1):
+            p = doc.add_paragraph()
+            p.add_run(f"Q{q_idx}: ").bold = True
+            p.add_run(question.get('question', 'N/A'))
+    
+    def _generate_full_page_images_section(self) -> str:
+        """Generate full-page images section for HTML"""
+        html = '<div class="full-page-images">\n'
+        html += '<div class="full-page-images-header">🖼️ REFERENCE IMAGES</div>\n'
+        
+        for image_path, metadata in self.full_page_images.items():
+            data_uri = self._load_image_as_base64(image_path)
+            if data_uri:
+                question_num = metadata['question_num']
+                question_text = metadata['question_text']
+                image_filename = Path(image_path).name
+                
+                html += f'<div class="full-page-image-item">\n'
+                html += f'<div class="full-page-image-label">Question {question_num}: {image_filename}</div>\n'
+                html += f'<p style="margin-bottom: 10px; color: #7f8c8d; font-size: 0.9em; font-style: italic;">{question_text}</p>\n'
+                html += f'<img src="{data_uri}" alt="Question {question_num} image">\n'
+                html += '</div>\n'
+        
+        html += '</div>\n'
+        return html
+    
+    def _generate_full_page_images_docx(self, doc: Document):
+        """Generate full-page images section for DOCX"""
+        title = doc.add_paragraph()
+        title_run = title.add_run("🖼️ REFERENCE IMAGES")
+        title_run.font.size = Pt(14)
+        title_run.font.bold = True
+        title_run.font.color.rgb = RGBColor(155, 89, 182)
+        title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        
+        doc.add_paragraph()  # Spacing
+        
+        for image_path, metadata in self.full_page_images.items():
+            full_path = self._get_image_path(image_path)
+            if full_path:
+                question_num = metadata['question_num']
+                question_text = metadata['question_text']
+                image_filename = Path(image_path).name
+                
+                # Title
+                title_para = doc.add_paragraph()
+                title_run = title_para.add_run(f"Question {question_num}: {image_filename}")
+                title_run.font.bold = True
+                title_run.font.size = Pt(11)
+                
+                # Question text
+                q_para = doc.add_paragraph(question_text)
+                for run in q_para.runs:
+                    run.font.italic = True
+                    run.font.size = Pt(10)
+                
+                # Image
+                try:
+                    doc.add_picture(str(full_path), width=Inches(6.0))
+                except:
+                    doc.add_paragraph(f"[Could not load image: {image_filename}]")
+                
+                doc.add_paragraph()  # Spacing
+    
+    def _generate_answers_section(self) -> str:
+        """Generate answers section for HTML"""
+        html = '<div class="answers-section">\n'
+        html += '<div class="answers-header">📋 ANSWER KEY</div>\n'
+        
+        for idx, exercise in enumerate(self.exercises, 1):
+            answer = exercise.get('answer')
+            if answer is None:
+                continue
+            
+            html += f'<div class="answer-item">\n'
+            html += f'<div class="answer-number">Question {idx}</div>\n'
+            
+            if isinstance(answer, list):
+                answer_text = ', '.join(str(a) for a in answer) if answer else 'N/A'
+            elif isinstance(answer, dict):
+                answer_text = ' | '.join([f'{k}: {v}' for k, v in answer.items()])
+            else:
+                answer_text = str(answer)
+            
+            html += f'<div class="answer-text">{answer_text}</div>\n'
+            html += '</div>\n'
+        
+        html += '</div>\n'
+        return html
+    
+    def _generate_answers_docx(self, doc: Document):
+        """Generate answers section for DOCX"""
+        title = doc.add_paragraph()
+        title_run = title.add_run("📋 ANSWER KEY")
+        title_run.font.size = Pt(14)
+        title_run.font.bold = True
+        title_run.font.color.rgb = RGBColor(231, 76, 60)
+        title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        
+        doc.add_paragraph()  # Spacing
+        
+        for idx, exercise in enumerate(self.exercises, 1):
+            answer = exercise.get('answer')
+            if answer is None:
+                continue
+            
+            # Question number
+            q_para = doc.add_paragraph()
+            q_run = q_para.add_run(f"Q{idx}")
+            q_run.font.bold = True
+            q_run.font.color.rgb = RGBColor(39, 174, 96)
+            
+            # Answer
+            if isinstance(answer, list):
+                answer_text = ', '.join(str(a) for a in answer) if answer else 'N/A'
+            elif isinstance(answer, dict):
+                answer_text = ' | '.join([f'{k}: {v}' for k, v in answer.items()])
+            else:
+                answer_text = str(answer)
+            
+            a_run = q_para.add_run(f": {answer_text}")
+            a_run.font.size = Pt(11)
+    
     def _render_inline_image(self, image_path: str) -> str:
-        """Render an image inline with base64 encoding"""
+        """Render an image inline with base64 encoding for HTML"""
         data_uri = self._load_image_as_base64(image_path)
         if data_uri:
             filename = Path(image_path).name
@@ -589,7 +1017,7 @@ class ExerciseToPaper:
             return f'<div class="media-note">🖼️ Image: {image_path}</div>\n'
     
     def _render_mcq_single(self, exercise: Dict) -> str:
-        """Render MCQ single choice"""
+        """Render MCQ single choice for HTML"""
         html = '<div class="option-list">\n'
         for idx, option in enumerate(exercise.get('options', [])):
             html += f'<div class="option"><input type="radio" id="q_opt_{idx}" name="question"> <label for="q_opt_{idx}">{option}</label></div>\n'
@@ -597,7 +1025,7 @@ class ExerciseToPaper:
         return html
     
     def _render_mcq_multiple(self, exercise: Dict) -> str:
-        """Render MCQ multiple choice"""
+        """Render MCQ multiple choice for HTML"""
         html = '<div class="option-list">\n'
         for idx, option in enumerate(exercise.get('options', [])):
             html += f'<div class="option"><input type="checkbox" id="q_opt_{idx}" name="question"> <label for="q_opt_{idx}">{option}</label></div>\n'
@@ -605,7 +1033,7 @@ class ExerciseToPaper:
         return html
     
     def _render_list_pick(self, exercise: Dict) -> str:
-        """Render list pick"""
+        """Render list pick for HTML"""
         html = '<div class="option-list">\n'
         for idx, option in enumerate(exercise.get('options', [])):
             html += f'<div class="option"><input type="checkbox" id="q_opt_{idx}" name="question"> <label for="q_opt_{idx}">{option}</label></div>\n'
@@ -613,7 +1041,7 @@ class ExerciseToPaper:
         return html
     
     def _render_fill_blanks(self, exercise: Dict) -> str:
-        """Render fill blanks dropdown"""
+        """Render fill blanks for HTML"""
         html = '<div class="sentence-parts">\n'
         parts = exercise.get('sentence_parts', [])
         for part in parts:
@@ -625,7 +1053,7 @@ class ExerciseToPaper:
         return html
     
     def _render_match_phrases(self, exercise: Dict) -> str:
-        """Render match phrases"""
+        """Render match phrases for HTML"""
         html = '<div class="pairs-list">\n'
         html += '<p style="margin-bottom: 10px; color: #7f8c8d; font-style: italic; font-size: 0.9em;">Match the phrases by drawing lines or writing corresponding letters:</p>\n'
         pairs = exercise.get('pairs', [])
@@ -636,19 +1064,16 @@ class ExerciseToPaper:
         return html
     
     def _render_match_sentence(self, exercise: Dict) -> str:
-        """Render match sentence with randomized images"""
+        """Render match sentence for HTML"""
         pairs = exercise.get('pairs', [])
         
-        # Create list of images with original indices for answer key
+        # Create list of images with original indices
         images_with_indices = [(idx, pair.get('image_path', '')) for idx, pair in enumerate(pairs)]
         
         # Shuffle images
         random_order = list(range(len(pairs)))
         random.shuffle(random_order)
         shuffled_images = [images_with_indices[i] for i in random_order]
-        
-        # Create mapping from original index to random label
-        index_to_label = {orig_idx: chr(65 + label_idx) for label_idx, (orig_idx, _) in enumerate(shuffled_images)}
         
         html = '<div class="pairs-list">\n'
         html += '<p style="margin-bottom: 10px; color: #2c3e50; font-weight: bold; font-size: 0.95em;">Images:</p>\n'
@@ -675,7 +1100,7 @@ class ExerciseToPaper:
         return html
     
     def _render_order_phrase(self, exercise: Dict) -> str:
-        """Render order phrase"""
+        """Render order phrase for HTML"""
         html = '<div class="sentence-parts">\n'
         html += '<p style="margin-bottom: 10px; color: #7f8c8d; font-style: italic; font-size: 0.9em;">Number the sentences in correct order:</p>\n'
         for idx, phrase in enumerate(exercise.get('phrase_shuffled', []), 1):
@@ -684,7 +1109,7 @@ class ExerciseToPaper:
         return html
     
     def _render_categorization(self, exercise: Dict) -> str:
-        """Render categorization - compact layout to avoid page breaks"""
+        """Render categorization for HTML"""
         html = '<div class="pairs-list">\n'
         html += '<p style="margin-bottom: 10px; color: #2c3e50; font-weight: bold; font-size: 0.95em;">Categorize each item:</p>\n'
         stimuli = exercise.get('stimuli', [])
@@ -715,7 +1140,7 @@ class ExerciseToPaper:
         return html
     
     def _render_word_fill(self, exercise: Dict) -> str:
-        """Render word fill"""
+        """Render word fill for HTML"""
         html = '<div class="sentence-parts">\n'
         parts = exercise.get('sentence_parts', [])
         for part in parts:
@@ -727,7 +1152,7 @@ class ExerciseToPaper:
         return html
     
     def _render_sequence(self, exercise: Dict) -> str:
-        """Render sequence/ordering"""
+        """Render sequence for HTML"""
         html = '<div class="sentence-parts">\n'
         html += '<p style="margin-bottom: 10px; color: #7f8c8d; font-style: italic; font-size: 0.9em;">Put items in correct order:</p>\n'
         options = exercise.get('audio_options', [])
@@ -738,7 +1163,7 @@ class ExerciseToPaper:
         return html
     
     def _render_image_tagging(self, exercise: Dict) -> str:
-        """Render image tagging with inline image"""
+        """Render image tagging for HTML"""
         html = ''
         media = exercise.get('media', {})
         image_path = media.get('image', '')
@@ -756,58 +1181,11 @@ class ExerciseToPaper:
         return html
     
     def _render_multi_questions(self, exercise: Dict) -> str:
-        """Render multi questions"""
+        """Render multi questions for HTML"""
         html = '<div style="border: 2px dashed #3498db; padding: 10px; border-radius: 4px; margin: 10px 0;">\n'
         html += '<p style="margin-bottom: 10px; font-style: italic; color: #7f8c8d; font-size: 0.85em;">Multiple questions in one exercise:</p>\n'
         for q_idx, question in enumerate(exercise.get('questions', []), 1):
             html += f'<div style="margin: 10px 0; padding: 8px; background: white; border-radius: 3px; font-size: 0.9em;"><strong>Question {q_idx}:</strong> {question.get("question", "N/A")}</div>\n'
-        html += '</div>\n'
-        return html
-    
-    def _generate_full_page_images_section(self) -> str:
-        """Generate full-page images section"""
-        html = '<div class="full-page-images">\n'
-        html += '<div class="full-page-images-header">🖼️ REFERENCE IMAGES</div>\n'
-        
-        for image_path, metadata in self.full_page_images.items():
-            data_uri = self._load_image_as_base64(image_path)
-            if data_uri:
-                question_num = metadata['question_num']
-                question_text = metadata['question_text']
-                image_filename = Path(image_path).name
-                
-                html += f'<div class="full-page-image-item">\n'
-                html += f'<div class="full-page-image-label">Question {question_num}: {image_filename}</div>\n'
-                html += f'<p style="margin-bottom: 10px; color: #7f8c8d; font-size: 0.9em; font-style: italic;">{question_text}</p>\n'
-                html += f'<img src="{data_uri}" alt="Question {question_num} image">\n'
-                html += '</div>\n'
-        
-        html += '</div>\n'
-        return html
-    
-    def _generate_answers_section(self) -> str:
-        """Generate answers section"""
-        html = '<div class="answers-section">\n'
-        html += '<div class="answers-header">📋 ANSWER KEY</div>\n'
-        
-        for idx, exercise in enumerate(self.exercises, 1):
-            answer = exercise.get('answer')
-            if answer is None:
-                continue
-            
-            html += f'<div class="answer-item">\n'
-            html += f'<div class="answer-number">Question {idx}</div>\n'
-            
-            if isinstance(answer, list):
-                answer_text = ', '.join(str(a) for a in answer) if answer else 'N/A'
-            elif isinstance(answer, dict):
-                answer_text = ' | '.join([f'{k}: {v}' for k, v in answer.items()])
-            else:
-                answer_text = str(answer)
-            
-            html += f'<div class="answer-text">{answer_text}</div>\n'
-            html += '</div>\n'
-        
         html += '</div>\n'
         return html
 
@@ -815,22 +1193,39 @@ class ExerciseToPaper:
 def main():
     """Main function"""
     if len(sys.argv) < 2:
-        print("Usage: python json_to_paper.py <json_file> [output_file.html]")
+        print("Usage: python json_to_paper.py <json_file> [output_base_name]")
         print("\nExample:")
         print("  python json_to_paper.py testfile-complete.json")
-        print("  python json_to_paper.py testfile-complete.json my_worksheet.html")
-        print("\nThen open in browser and print to PDF (Ctrl+P or Cmd+P)")
+        print("  python json_to_paper.py testfile-complete.json my_worksheet")
+        print("\nGenerates: my_worksheet_paper.html and my_worksheet_paper.docx")
         sys.exit(1)
     
     json_file = sys.argv[1]
-    output_file = sys.argv[2] if len(sys.argv) > 2 else None
+    output_base = sys.argv[2] if len(sys.argv) > 2 else None
     
     converter = ExerciseToPaper(json_file)
-    output = converter.generate_html(output_file)
     
-    print(f"\n✨ Worksheet ready!")
-    print(f"📄 Open '{output}' in your browser")
-    print(f"🖨️  Print to PDF: Ctrl+P (or Cmd+P on Mac) → Save as PDF")
+    # Generate HTML
+    if output_base:
+        html_output = f"{output_base}_paper.html"
+    else:
+        html_output = None
+    html_file = converter.generate_html(html_output)
+    
+    # Generate DOCX
+    if output_base:
+        docx_output = f"{output_base}_paper.docx"
+    else:
+        docx_output = None
+    docx_file = converter.generate_docx(docx_output)
+    
+    print(f"\n✨ Worksheets ready!")
+    print(f"📄 HTML: {html_file}")
+    if docx_file:
+        print(f"📝 DOCX: {docx_file}")
+        print(f"\n💡 Use DOCX for editing, HTML for printing to PDF")
+    else:
+        print(f"⚠️  Install python-docx for DOCX support: pip install python-docx")
 
 
 if __name__ == "__main__":
