@@ -832,6 +832,13 @@ class ExerciseToPaper:
             p = doc.add_paragraph()
             p.add_run("__ ").bold = True
             p.add_run(f"{idx}. {phrase}")
+        
+        # Add correct answer sequence
+        doc.add_paragraph("\nCorrect order:", style='Heading 4')
+        for idx, phrase in enumerate(exercise.get('answer', []), 1):
+            p = doc.add_paragraph()
+            p.add_run(f"{idx}. ").bold = True
+            p.add_run(phrase)
     
     def _render_categorization_docx(self, doc: Document, exercise: Dict):
         """Render categorization in DOCX"""
@@ -1122,12 +1129,19 @@ class ExerciseToPaper:
     def _render_order_phrase(self, exercise: Dict) -> str:
         """Render order phrase for HTML"""
         html = '<div class="sentence-parts">\n'
+        html += '<strong>Shuffle to order:</strong>\n'
         phrases = exercise.get('phrase_shuffled', [])
         
         for idx, phrase in enumerate(phrases, 1):
             html += f'<div class="option">___ {idx}. {phrase}</div>\n'
         
         html += '</div>\n'
+        html += '<div class="pairs-list"><strong>Correct order:</strong>\n'
+        answers = exercise.get('answer', [])
+        for idx, phrase in enumerate(answers, 1):
+            html += f'<div class="pair"><div class="pair-source">{idx}. {phrase}</div></div>\n'
+        html += '</div>\n'
+        
         return html
     
     def _render_categorization(self, exercise: Dict) -> str:
