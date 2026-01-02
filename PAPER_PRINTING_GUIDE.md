@@ -1,57 +1,71 @@
 # WifeyMOOC JSON to Paper Converter 📚
 
-Convert your exercise JSON files into beautiful, printable HTML worksheets for paper-based learning.
+Convert your exercise JSON files into beautiful, printable PDF worksheets (A4 format) for paper-based learning.
 
 ## Overview
 
-The `json_to_paper.py` script transforms your WifeyMOOC exercise JSON files into formatted HTML documents that are:
+The `json_to_paper.py` script transforms your WifeyMOOC exercise JSON files into professional PDF documents that are:
 
-- 💷 **Print-friendly** - Optimized CSS for clean paper output
+- 📄 **A4 PDF Format** - Ready to print directly
 - 🎨 **Beautifully formatted** - Professional worksheet styling
-- 📑 **Answer key included** - Automatic answer section at the end
-- 📚 **Supports all question types** - MCQ, fill-blanks, matching, ordering, categorization, and more
-- 💤 **No internet needed** - Works completely offline
+- 📋 **Answer key included** - Automatic answer section at the end
+- 🎲 **Smart randomization** - Images shuffled for match_sentence exercises
+- 🖼️ **Embedded images** - All images included inline in PDF
+- 🔊 **Media references** - Audio/video locations noted for reference
+- 🖨️ **Print-optimized** - Perfect spacing and sizing for A4 paper
+- 💾 **Fallback HTML** - Can generate HTML if PDF library not available
 
 ## Installation
 
-No dependencies needed! This script uses only Python 3's built-in modules.
+### 1. Install Python Dependencies
 
 ```bash
-# Make it executable (on macOS/Linux)
+# Install weasyprint for PDF generation
+pip install weasyprint
+
+# On macOS (if you have Homebrew issues):
+brew install weasyprint
+```
+
+### 2. Make Script Executable (Optional)
+
+```bash
+# On macOS/Linux
 chmod +x json_to_paper.py
 ```
 
 ## Usage
 
-### Basic Usage
+### Basic Usage - Generate PDF
 
 ```bash
 python3 json_to_paper.py testfile-complete.json
 ```
 
-This will generate `testfile-complete_paper.html` in the same directory.
+This will generate `testfile-complete_paper.pdf` in the same directory.
 
 ### Custom Output Filename
 
 ```bash
-python3 json_to_paper.py testfile-complete.json my_worksheet.html
+python3 json_to_paper.py testfile-complete.json my_worksheet.pdf
 ```
 
-### Print to PDF
+### Printing
 
-1. Open the HTML file in your browser:
+1. The PDF is ready to print directly:
    ```bash
-   open testfile-complete_paper.html  # macOS
-   # or
-   start testfile-complete_paper.html # Windows
-   # or
-   xdg-open testfile-complete_paper.html # Linux
+   # On macOS
+   open testfile-complete_paper.pdf
+   
+   # On Linux
+   xdg-open testfile-complete_paper.pdf
+   
+   # On Windows
+   start testfile-complete_paper.pdf
    ```
 
-2. Press `Ctrl+P` (or `Cmd+P` on Mac) to open the print dialog
-3. Select "Save as PDF" or your printer
-4. Adjust settings as needed (margins, page orientation, etc.)
-5. Print or save!
+2. Use your PDF viewer's print function
+3. Settings should default to A4 paper size
 
 ## Features
 
@@ -64,7 +78,7 @@ python3 json_to_paper.py testfile-complete.json my_worksheet.html
 | `list_pick` | List selection | Checkboxes for multiple items |
 | `fill_blanks_dropdown` | Fill in blanks | Blank lines for answers |
 | `match_phrases` | Match beginning/ending | Two-column matching format |
-| `match_sentence` | Match sentences to images | Lists with image references |
+| `match_sentence` | Match sentences to images | **Randomized image grid** |
 | `order_phrase` | Ordering/sequencing | Numbered spaces for ordering |
 | `categorization_multiple` | Categorization | Items with category options |
 | `word_fill` | Word fill in context | Sentence with blank spaces |
@@ -72,82 +86,57 @@ python3 json_to_paper.py testfile-complete.json my_worksheet.html
 | `image_tagging` | Label a diagram | Tag list with image reference |
 | `multi_questions` | Multiple questions together | Sub-questions in one exercise |
 
-### HTML Output Features
+### Smart Match Sentence Feature 🎲
 
-- **Visual hierarchy**: Question numbers, types, and formatting
-- **Media notes**: Icons and references for videos, audio, and images
-- **Answer key**: Separate section at the end (easy to remove for student copies!)
-- **Print optimization**: Page breaks, spacing, and font sizing
-- **Responsive design**: Works on different screen sizes before printing
+For `match_sentence` exercises:
+- **Images are displayed in random order** with letter labels (A, B, C, D...)
+- **Sentences appear below** without revealing which image matches which sentence
+- Each PDF generation produces a **different random order**
+- Answer key shows the correct mappings
 
-## Example Workflow
+Example layout:
+```
+Images:
+┌─────────────────────────────────┐
+│ (A)        │ (B)        │ (C)   │
+│  [Image]   │  [Image]   │[Image]│
+└─────────────────────────────────┘
 
-### For Teachers
-
-```bash
-# Create student worksheet (no answers)
-python3 json_to_paper.py unit1-exercises.json unit1-student.html
-# Print or save as PDF for students
-
-# Create answer key
-python3 json_to_paper.py unit1-exercises.json unit1-answers.html
-# Print for your reference
+Match sentences with images:
+1. French text... _____
+2. French text... _____
+3. French text... _____
 ```
 
-### For Students
+## PDF Output Details
 
-```bash
-# Generate worksheet for practice
-python3 json_to_paper.py practice-set.json
-# Open in browser, print, and complete on paper
-# Check answers from the included answer key
-```
-
-## Customization
-
-### Colors and Styling
-
-The script uses a default color scheme optimized for printing. To customize:
-
-1. Open the generated HTML file in a text editor
-2. Find the `<style>` section
-3. Modify colors, fonts, and spacing as needed
-
-Key CSS variables you can change:
-- `#3498db` - Primary blue (questions, numbering)
-- `#2c3e50` - Dark text and borders
-- `#27ae60` - Green (answer section)
-- `#e74c3c` - Red (answer key header)
+### Page Format
+- **Size**: A4 (210 × 297 mm)
+- **Margins**: 1cm on all sides
+- **Line height**: Optimized for readability
+- **Font**: Segoe UI system fonts
 
 ### Answer Key
-
-To remove the answer key from student worksheets:
-
-1. Open the HTML file in a text editor
-2. Find the section with `class="answers-section"`
-3. Delete everything from `<div class="answers-section">` to the closing `</div>`
-4. Save and print
-
-## Tips for Best Results
-
-### Printing
-
-- 💴 **Paper**: Use 80-100 gsm white paper for best results
-- 📐 **Font**: Print with default font (Segoe UI or system sans-serif)
-- 📷 **Margins**: Use default or 0.5" (1.27cm) margins
-- 💪 **Ink**: Use economy/draft mode to save ink
-- 🚵 **Pages**: Check "Shrink to page width" if needed
-
-### Organization
-
-```bash
-# Organize by unit
-mkdir -p worksheets/unit1 worksheets/unit2
-python3 json_to_paper.py data/unit1.json worksheets/unit1/exercises.html
-python3 json_to_paper.py data/unit2.json worksheets/unit2/exercises.html
-```
+- Appears on separate page
+- Clearly marked with red header
+- Shows all answers in indexed format
 
 ## Troubleshooting
+
+### ImportError: No module named 'weasyprint'
+
+**Solution**: Install weasyprint
+```bash
+pip install weasyprint
+```
+
+If you have issues installing weasyprint:
+- On macOS: Use `brew install weasyprint`
+- On Linux (Ubuntu): Install system dependencies first:
+  ```bash
+  sudo apt-get install python3-pip python3-cffi python3-brlapi python3-dev
+  pip install weasyprint
+  ```
 
 ### File not found error
 
@@ -156,9 +145,26 @@ python3 json_to_paper.py data/unit2.json worksheets/unit2/exercises.html
 ```
 
 **Solution**: Make sure the JSON file is in the same directory or provide the full path:
-
 ```bash
 python3 json_to_paper.py /full/path/to/myfile.json
+```
+
+### Images not appearing in PDF
+
+**Possible causes:**
+1. Image files not found - check file paths in JSON
+2. Image paths are relative to JSON location
+3. Supported formats: JPG, PNG, GIF, WebP, SVG
+
+**Solution**: Place images in a subdirectory relative to your JSON:
+```
+my_project/
+├── testfile-complete.json
+├── images/
+│   ├── image1.jpg
+│   └── image2.png
+└── audios/
+    └── audio1.mp3
 ```
 
 ### JSON parsing error
@@ -171,42 +177,133 @@ python3 json_to_paper.py /full/path/to/myfile.json
 - Use [jsonlint.com](https://jsonlint.com) to check syntax
 - Ensure all commas and quotes are correct
 - Verify all bracket pairs match
+- Check for trailing commas in arrays/objects
 
-### HTML doesn't look right
+### Slow PDF generation
 
-**Solution**: Try opening in a different browser:
-- Chrome/Edge: Best compatibility
-- Firefox: Good support
-- Safari: Should work fine
+**Solution**: This is normal for large files with many images. First generation may take 10-30 seconds.
 
-### Questions not displaying
+## Workflow Examples
 
-**Solution**: The question type might not be fully formatted yet. Check the `_exercise_to_html()` method in the script and add support or report an issue.
+### For Teachers
 
-## Advanced Usage
+```bash
+# Create student worksheet
+python3 json_to_paper.py unit1-exercises.json unit1-student.pdf
+
+# Print for students
+open unit1-student.pdf
+# Ctrl+P to print, or save to cloud for digital distribution
+
+# Create answer key
+python3 json_to_paper.py unit1-exercises.json unit1-answers.pdf
+```
 
 ### Batch Processing
 
-Create a bash script to process multiple files:
+Create a bash script `batch_convert.sh`:
 
 ```bash
 #!/bin/bash
 for file in data/*.json; do
-    python3 json_to_paper.py "$file" "output/$(basename $file .json)_worksheet.html"
+    output="output/$(basename $file .json)_worksheet.pdf"
+    python3 json_to_paper.py "$file" "$output"
+    echo "Generated: $output"
 done
 ```
 
-### Integration with Other Tools
+Run with:
+```bash
+chmod +x batch_convert.sh
+./batch_convert.sh
+```
 
-The HTML output can be:
-- Converted to PDF using tools like `wkhtmltopdf`
-- Imported into Word or Google Docs
-- Embedded in web pages
-- Processed with other HTML manipulation tools
+## Tips for Best Results
 
-## Contributing
+### Printing Settings
 
-To add support for new question types:
+- 📏 **Paper**: A4 (210 × 297 mm) - default setting
+- 🔤 **Font**: Use default fonts (already optimized)
+- 📏 **Margins**: Default margins are perfect for binding
+- 🖨️ **Color**: Use color for best visual experience with images
+- 📊 **Quality**: High quality recommended for images
+
+### File Organization
+
+```bash
+# Organize worksheets by unit
+mkdir -p worksheets/{unit1,unit2,unit3}
+
+python3 json_to_paper.py data/unit1.json worksheets/unit1/exercises.pdf
+python3 json_to_paper.py data/unit2.json worksheets/unit2/exercises.pdf
+```
+
+### Creating Matched Sets
+
+```bash
+# Generate multiple versions with randomized match_sentence
+python3 json_to_paper.py exercises.json version_A.pdf
+python3 json_to_paper.py exercises.json version_B.pdf
+python3 json_to_paper.py exercises.json version_C.pdf
+
+# Each will have different image orders!
+```
+
+## Advanced Usage
+
+### Editing PDF Styling
+
+To customize colors or fonts, edit the `<style>` section in the Python script:
+
+```python
+# Find this section in generate_pdf():
+css = CSS(string="""
+    @page {
+        size: A4;
+        margin: 1cm;
+    }
+""")
+
+# You can add additional CSS rules here
+```
+
+### Custom Page Setup
+
+For different paper sizes, modify the CSS:
+
+```python
+# A3 size
+size: A3;
+
+# Letter size (US)
+size: Letter;
+
+# Custom size
+size: 210mm 297mm;
+```
+
+## Known Limitations
+
+- **Answer key format**: Shows raw JSON answer values (may need manual interpretation for complex answers)
+- **Special HTML characters**: Some special characters in questions may need escaping
+- **Very large files**: PDFs with 100+ questions may take several minutes
+- **Memory**: Large image files may require significant memory
+
+## Performance
+
+- **Small files** (1-20 questions): < 2 seconds
+- **Medium files** (20-50 questions): 5-10 seconds
+- **Large files** (50+ questions): 10-30+ seconds
+
+Speed depends on:
+- Number of images
+- Image file sizes
+- Image complexity (SVG slower than JPG)
+- System resources
+
+## Updates and Contributing
+
+To add support for new question types or improve formatting:
 
 1. Add a new method in `ExerciseToPaper` class:
    ```python
@@ -229,8 +326,8 @@ Same as WifeyMOOC (WTFPL)
 
 ## Support
 
-For issues or feature requests, please open an issue on the repository! 🙋
+For issues or feature requests, please open an issue on the repository! 👋
 
 ---
 
-**Happy printing! 💫🖥️**
+**Ready to print? Happy learning! 📚✏️**
