@@ -18,6 +18,7 @@ class ExerciseToPaper:
         self.json_file = json_file
         self.exercises = []
         self.base_dir = Path(json_file).parent
+        self.full_page_images = {}  # Track images for full-page references
         self.load_json()
         
     def load_json(self):
@@ -165,6 +166,16 @@ class ExerciseToPaper:
             margin: 10px 0;
             font-size: 0.85em;
             color: #856404;
+        }
+        
+        .image-reference {
+            background: #e8f4f8;
+            border-left: 3px solid #3498db;
+            padding: 8px 12px;
+            margin: 10px 0;
+            font-size: 0.85em;
+            color: #2c3e50;
+            font-style: italic;
         }
         
         .media-image {
@@ -345,6 +356,42 @@ class ExerciseToPaper:
             break-inside: avoid;
         }
         
+        .full-page-images {
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 3px dashed #95a5a6;
+            break-before: page;
+        }
+        
+        .full-page-images-header {
+            background: #9b59b6;
+            color: white;
+            padding: 12px;
+            border-radius: 4px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+        }
+        
+        .full-page-image-item {
+            margin-bottom: 30px;
+            page-break-inside: avoid;
+        }
+        
+        .full-page-image-label {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+        
+        .full-page-image-item img {
+            width: 100%;
+            height: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+        }
+        
         .answers-section {
             margin-top: 50px;
             padding-top: 20px;
@@ -416,9 +463,16 @@ class ExerciseToPaper:
         </div>
 """
         
+        # First pass: collect full-page images
+        self._collect_full_page_images()
+        
         # Add exercises
         for idx, exercise in enumerate(self.exercises, 1):
             html_content += self._exercise_to_html(exercise, idx)
+        
+        # Add full-page images section if there are any
+        if self.full_page_images:
+            html_content += self._generate_full_page_images_section()
         
         # Add answers section
         html_content += self._generate_answers_section()
@@ -441,6 +495,25 @@ class ExerciseToPaper:
         print(f"✓ HTML worksheet saved to: {output_file}")
         return output_file
     
+    def _collect_full_page_images(self):
+        """Collect images from simple types (MCQ, list_pick, etc.) for full-page rendering"""
+        for idx, exercise in enumerate(self.exercises, 1):
+            ex_type = exercise.get('type', '')
+            # Only collect images from simple question types
+            if ex_type in ['mcq_single', 'mcq_multiple', 'list_pick', 'fill_blanks_dropdown', 
+                          'word_fill', 'sequence_audio', 'order_phrase']:
+                if exercise.get('media'):
+                    media = exercise['media']
+                    if isinstance(media, dict) and 'image' in media:
+                        image_path = media['image']
+                        question_num = idx
+                        question_text = exercise.get('question', 'N/A')
+                        self.full_page_images[image_path] = {
+                            'question_num': question_num,
+                            'question_text': question_text,
+                            'type': ex_type
+                        }
+    
     def _exercise_to_html(self, exercise: Dict[str, Any], number: int) -> str:
         """Convert individual exercise to HTML"""
         ex_type = exercise.get('type', 'unknown')
@@ -461,9 +534,16 @@ class ExerciseToPaper:
                     html += f'<div class="media-note">🎥 Video: {media["video"]}</div>\n'
                 if 'audio' in media:
                     html += f'<div class="media-note">🔊 Audio: {media["audio"]}</div>\n'
-                if 'image' in media and ex_type != 'match_sentence' and ex_type != 'image_tagging':
-                    # Embed image inline for non-match_sentence types
-                    html += self._render_inline_image(media['image'])
+                if 'image' in media:
+                    # Check if this is a simple type (MCQ, etc.) that should reference full page
+                    if ex_type in ['mcq_single', 'mcq_multiple', 'list_pick', 'fill_blanks_dropdown',
+                                  'word_fill', 'sequence_audio', 'order_phrase']:
+                        # Reference full-page image instead of embedding
+                        image_filename = Path(media['image']).name
+                        html += f'<div class="image-reference">📄 See image "{image_filename}" on the reference page</div>\n'
+                    elif ex_type not in ['match_sentence', 'image_tagging']:
+                        # For other types (not match_sentence or image_tagging), embed inline
+                        html += self._render_inline_image(media['image'])
         
         # Type-specific rendering
         if ex_type == 'mcq_single':
@@ -681,6 +761,27 @@ class ExerciseToPaper:
         html += '<p style="margin-bottom: 10px; font-style: italic; color: #7f8c8d; font-size: 0.85em;">Multiple questions in one exercise:</p>\n'
         for q_idx, question in enumerate(exercise.get('questions', []), 1):
             html += f'<div style="margin: 10px 0; padding: 8px; background: white; border-radius: 3px; font-size: 0.9em;"><strong>Question {q_idx}:</strong> {question.get("question", "N/A")}</div>\n'
+        html += '</div>\n'
+        return html
+    
+    def _generate_full_page_images_section(self) -> str:
+        """Generate full-page images section"""
+        html = '<div class="full-page-images">\n'
+        html += '<div class="full-page-images-header">🖼️ REFERENCE IMAGES</div>\n'
+        
+        for image_path, metadata in self.full_page_images.items():
+            data_uri = self._load_image_as_base64(image_path)
+            if data_uri:
+                question_num = metadata['question_num']
+                question_text = metadata['question_text']
+                image_filename = Path(image_path).name
+                
+                html += f'<div class="full-page-image-item">\n'
+                html += f'<div class="full-page-image-label">Question {question_num}: {image_filename}</div>\n'
+                html += f'<p style="margin-bottom: 10px; color: #7f8c8d; font-size: 0.9em; font-style: italic;">{question_text}</p>\n'
+                html += f'<img src="{data_uri}" alt="Question {question_num} image">\n'
+                html += '</div>\n'
+        
         html += '</div>\n'
         return html
     
