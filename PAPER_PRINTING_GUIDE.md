@@ -1,171 +1,140 @@
 # WifeyMOOC JSON to Paper Converter 📚
 
-Convert your exercise JSON files into beautiful, printable HTML worksheets for paper-based learning.
+Convert your exercise JSON files into beautiful, printable HTML worksheets AND editable DOCX documents for paper-based learning.
 
 ## Overview
 
-The `json_to_paper.py` script transforms your WifeyMOOC exercise JSON files into formatted HTML documents that you can fine-tune and print to PDF:
+The `json_to_paper.py` script transforms your WifeyMOOC exercise JSON files into TWO formats:
 
-- 📋 **HTML Format** - Full control over pagination and styling
-- 🎨 **Beautifully formatted** - Professional worksheet styling
-- 📋 **Answer key included** - Automatic answer section at the end
-- 🎲 **Smart randomization** - Images shuffled for match_sentence exercises
-- 🖼️ **Embedded images** - All images included inline
-- 🔊 **Media references** - Audio/video locations noted for reference
-- ✏️ **Fully editable** - Edit HTML/CSS before printing to get perfect pagination
-- 🚽 **No dependencies** - Just Python 3, no external libraries needed
+### HTML Output (🖨️ For Printing)
+- Professional HTML formatting
+- Full control over pagination (CSS editable)
+- Ready to print to PDF
+- Browser print dialog for final tweaking
+
+### DOCX Output (✏️ For Editing)
+- Native Word document (A4 format)
+- Fully editable before printing
+- Easy to adjust layout, fonts, spacing
+- Professional formatting built-in
+- Share with colleagues for collaboration
+
+## Features
+
+✅ **Dual Output** - Both HTML and DOCX generated in one command  
+✅ **A4 Formatting** - Proper page sizes and margins  
+✅ **Smart Image Handling** - MCQs reference full-page images  
+✅ **Randomized Match Sentences** - Images shuffled for better pedagogy  
+✅ **Answer Key Included** - Automatic answer section at the end  
+✅ **Embedded Images** - All images included inline (no external files)  
+✅ **Media References** - Audio/video locations noted  
+✅ **Professional Styling** - Color-coded, well-organized layout  
 
 ## Installation
 
-No special installation needed! Just Python 3.
+### Step 1: Basic Setup (HTML only)
+Python 3 only - no dependencies needed:
+```bash
+cd path/to/WifeyMOOC
+python3 json_to_paper.py testfile-complete.json
+```
+
+### Step 2: Full Setup (HTML + DOCX)
+For DOCX support, install `python-docx`:
 
 ```bash
-# Make script executable (optional, on macOS/Linux)
-chmod +x json_to_paper.py
+pip install python-docx
+```
+
+Then run as normal:
+```bash
+python3 json_to_paper.py testfile-complete.json
 ```
 
 ## Usage
 
-### Generate HTML Worksheet
+### Generate Both HTML and DOCX
 
 ```bash
 python3 json_to_paper.py testfile-complete.json
 ```
 
-This generates `testfile-complete_paper.html` in the same directory.
+Generates:
+- `testfile-complete_paper.html` (browser/print)
+- `testfile-complete_paper.docx` (Word editing)
 
-### Custom Output Filename
+### Custom Output Names
 
 ```bash
-python3 json_to_paper.py testfile-complete.json my_worksheet.html
+python3 json_to_paper.py testfile-complete.json my_worksheet
 ```
 
-### Print to PDF
+Generates:
+- `my_worksheet_paper.html`
+- `my_worksheet_paper.docx`
 
-#### Method 1: Browser Print Dialog (Recommended)
+## Workflow: HTML vs DOCX
 
-1. Open the HTML file in your browser:
-   ```bash
-   # macOS
-   open testfile-complete_paper.html
-   
-   # Linux
-   xdg-open testfile-complete_paper.html
-   
-   # Windows
-   start testfile-complete_paper.html
-   ```
+### 🖨️ HTML Workflow (Print-Ready)
 
-2. Press **Ctrl+P** (Windows/Linux) or **Cmd+P** (macOS)
+**Best for:** Final printing, minimal editing, quick PDF generation
 
-3. Choose **Save as PDF** or your printer
+1. Generate: `python3 json_to_paper.py file.json`
+2. Open HTML in browser: `open file_paper.html`
+3. Print to PDF: Cmd+P → Save as PDF
+4. Adjust if needed: Edit CSS in HTML file, reload browser
 
-4. **Important print settings:**
-   - Page size: **A4** (or Letter)
-   - Margins: **Default** (the stylesheet handles spacing)
-   - Background graphics: **ON** (for colors/images)
-   - Scale: **100%** (don't shrink)
+### ✏️ DOCX Workflow (Editing & Customization)
 
-5. Click **Save** or **Print**
+**Best for:** Heavy editing, layout tweaks, sharing with team
 
-#### Method 2: Edit & Fine-tune Before Printing
+1. Generate: `python3 json_to_paper.py file.json`
+2. Open DOCX: Double-click `file_paper.docx` (opens in Word/LibreOffice)
+3. Edit freely:
+   - Change fonts, sizes, colors
+   - Adjust spacing and margins
+   - Reorder content
+   - Add/remove questions
+   - Insert your school logo
+4. Print or export to PDF from Word
 
-Since you have full HTML control, you can:
+### 🔄 Recommended Combined Workflow
 
-1. Open `testfile-complete_paper.html` in a text editor
-2. Find problematic exercises (e.g., `categorization_multiple` breaking pages)
-3. Adjust the CSS styling:
-   ```css
-   .categorization-item {
-       margin: 12px 0;
-       padding: 12px;
-       background: white;
-       border: 1px solid #dee2e6;
-       break-inside: avoid;  /* Prevents page breaks within item */
-   }
-   ```
-4. Add `break-after: avoid;` to keep related sections together
-5. Reduce margins or padding if needed
-6. Save and print
+**For production worksheets:**
 
-## Features
-
-### Supported Question Types
-
-| Type | Display | Features |
-|------|---------|----------|
-| `mcq_single` | Multiple choice (single) | Radio buttons for selection |
-| `mcq_multiple` | Multiple choice (multiple) | Checkboxes for multi-select |
-| `list_pick` | List selection | Checkboxes for multiple items |
-| `fill_blanks_dropdown` | Fill in blanks | Blank lines for answers |
-| `match_phrases` | Match beginning/ending | Two-column matching format |
-| `match_sentence` | Match sentences to images | **Randomized image grid** |
-| `order_phrase` | Ordering/sequencing | Numbered spaces for ordering |
-| `categorization_multiple` | Categorization | Items with category options |
-| `word_fill` | Word fill in context | Sentence with blank spaces |
-| `sequence_audio` | Audio sequencing | Items to order with audio note |
-| `image_tagging` | Label a diagram | Tag list with image reference |
-| `multi_questions` | Multiple questions together | Sub-questions in one exercise |
-
-### Smart Match Sentence Feature 🎲
-
-For `match_sentence` exercises:
-- **Images are displayed in random order** with letter labels (A, B, C, D...)
-- **Sentences appear below** without revealing which image matches which sentence
-- Each time you run the script, images shuffle differently
-- Answer key shows the correct mappings
-
-Example layout:
 ```
-Images:
-┌──────────────────────────────────────┐
-│ (A)         (B)         (C)    (D)   │
-│[Image]    [Image]    [Image] [Image]│
-└──────────────────────────────────────┘
-
-Match sentences with images:
-1. French sentence... ____
-2. French sentence... ____
-3. French sentence... ____
-4. French sentence... ____
+1. Generate both formats
+   python3 json_to_paper.py exercises.json
+   ↓
+2. Check HTML preview in browser
+   open exercises_paper.html
+   ↓
+3. If pagination looks good → Print HTML to PDF ✓
+   ↓
+4. If you need edits → Use DOCX for customization
+   open exercises_paper.docx
+   → Make changes
+   → Print/Export to PDF from Word
 ```
 
-## Pagination Tips
+## Installation Troubleshooting
 
-### Preventing Page Breaks
+### Missing python-docx
 
-If an exercise or section breaks across pages unexpectedly:
-
-**In the HTML/CSS:**
-```css
-.exercise {
-    break-inside: avoid;  /* Keeps entire exercise on one page */
-}
-
-.pairs-list {
-    break-inside: avoid;  /* Keeps matching list intact */
-}
+```
+⚠️  Warning: python-docx not installed. Install with: pip install python-docx
 ```
 
-**In browser print dialog:**
-- Lower the `margin` values slightly
-- Increase the `scale` from 100% to 102%
-- Reduce font size by 1-2px
+**Solution:**
+```bash
+pip install python-docx
 
-### Forcing Page Breaks
+# If that fails, try:
+pip3 install python-docx
 
-If you want a new page before the answer key:
-```css
-.answers-section {
-    break-before: page;  /* Already in default stylesheet */
-}
+# On Mac with Homebrew Python:
+python3 -m pip install python-docx
 ```
-
-### Compact Layouts
-
-The `categorization_multiple` renderer has been optimized to show all items together with a shared category list to prevent blank pages.
-
-## Troubleshooting
 
 ### File not found error
 
@@ -173,177 +142,261 @@ The `categorization_multiple` renderer has been optimized to show all items toge
 ✗ Error: File 'myfile.json' not found
 ```
 
-**Solution**: Provide the correct path:
+**Solution:** Provide the correct path:
 ```bash
 python3 json_to_paper.py /full/path/to/myfile.json
+python3 json_to_paper.py ./data/myfile.json
 ```
 
-### Images not appearing in HTML
+### Images not appearing
 
-**Solution**:
-1. Check that image files exist relative to JSON location
-2. Images should be in a subfolder like `images/` next to your JSON
-3. Check file paths in your JSON are correct
+**In HTML:** Use browser print preview (Cmd+P or Ctrl+P) to check
 
-Directory structure:
-```
-my_project/
-├── testfile-complete.json
-├── images/
-│   ├── image1.jpg
-│   └── image2.png
-└── audios/
-    └── audio1.mp3
-```
+**In DOCX:** 
+1. Image files must exist at the paths specified in JSON
+2. Check image paths are correct:
+   ```
+   my_project/
+   ├── testfile-complete.json
+   ├── images/
+   │   ├── image1.jpg
+   │   └── image2.png
+   ```
+3. In JSON, use relative paths:
+   ```json
+   "media": {
+     "image": "images/image1.jpg"
+   }
+   ```
 
-### JSON parsing error
+## Features by Exercise Type
 
-**Solution**: Validate your JSON:
-- Use [jsonlint.com](https://jsonlint.com)
-- Check for missing commas
-- Verify all brackets match
-- No trailing commas in arrays
+| Type | HTML | DOCX | Notes |
+|------|------|------|-------|
+| `mcq_single` | ✓ | ✓ | References full-page images |
+| `mcq_multiple` | ✓ | ✓ | References full-page images |
+| `list_pick` | ✓ | ✓ | References full-page images |
+| `fill_blanks_dropdown` | ✓ | ✓ | Blank lines for answers |
+| `match_phrases` | ✓ | ✓ | Two-column format |
+| `match_sentence` | ✓ | ✓ | **Randomized images** |
+| `order_phrase` | ✓ | ✓ | Numbered ordering |
+| `categorization_multiple` | ✓ | ✓ | Items with categories |
+| `word_fill` | ✓ | ✓ | Sentence with blanks |
+| `sequence_audio` | ✓ | ✓ | Audio sequencing |
+| `image_tagging` | ✓ | ✓ | Diagram labeling |
+| `multi_questions` | ✓ | ✓ | Multiple sub-questions |
 
-### Weird page breaks when printing
+## Formatting & Styling
 
-**Solutions**:
-1. Open HTML in different browser (Chrome handles print better)
-2. Adjust CSS margins/padding before problem exercises
-3. Use print preview to identify exact break points
-4. Add CSS rules for specific exercises
+### DOCX Formatting
 
-## Workflow Examples
+The generated DOCX includes:
+- ✓ A4 page size with 0.75" margins
+- ✓ Professional color-coded headers (blue for questions, purple for images, red for answers)
+- ✓ Proper spacing and typography
+- ✓ Formatted lists and bullet points
+- ✓ Embedded images (no broken links)
 
-### Quick Worksheet Generation
+### Editing in Word/LibreOffice
 
-```bash
-# Generate
-python3 json_to_paper.py unit1.json
+**Font changes:**
+1. Select all (Ctrl+A)
+2. Change font in toolbar
+3. Adjust size as needed
 
-# Open in browser
-open unit1_paper.html
+**Page breaks:**
+1. Click where you want break
+2. Insert → Page Break
 
-# Print (Cmd+P) → Save as PDF
-```
+**Add school logo:**
+1. Insert → Pictures
+2. Choose your logo
+3. Resize and position
 
-### Edit & Perfect Layout
+**Change colors:**
+1. Select text
+2. Home → Font Color
+3. Choose your school colors
 
-```bash
-# Generate
-python3 json_to_paper.py unit1.json
+## Advanced: Batch Processing
 
-# Edit HTML for pagination
-open -a TextEdit unit1_paper.html  # or your editor
-
-# Adjust CSS as needed, save
-
-# Open updated version in browser
-open unit1_paper.html
-
-# Print to PDF
-```
-
-### Batch Processing
+### Generate multiple files at once:
 
 ```bash
 #!/bin/bash
-for file in data/*.json; do
-    output="worksheets/$(basename $file .json)_worksheet.html"
-    python3 json_to_paper.py "$file" "$output"
-    echo "Generated: $output"
+# process_all_units.sh
+
+for json_file in data/*.json; do
+    base=$(basename "$json_file" .json)
+    echo "Processing: $base"
+    python3 json_to_paper.py "$json_file" "output/$base"
 done
+
+echo "✓ All worksheets generated!"
+ls output/*.docx  # Show generated DOCX files
 ```
 
-## CSS Customization
-
-All styling is in the `<style>` section of the HTML. Common tweaks:
-
-### Reduce Margins
-```css
-body {
-    padding: 10px;  /* was 20px */
-}
-
-.exercise {
-    margin-bottom: 15px;  /* was 25px */
-}
-```
-
-### Make Text Smaller
-```css
-html {
-    font-size: 12px;  /* was 14px */
-}
-```
-
-### Change Colors
-```css
-.exercise-number {
-    background: #2ecc71;  /* green instead of blue */
-}
-```
-
-### Adjust Image Sizes
-```css
-.media-image img {
-    max-height: 200px;  /* was 250px */
-}
-
-.image-item img {
-    max-height: 100px;  /* was 120px */
-}
-```
-
-## Printing Best Practices
-
-- 📏 **Paper**: A4 (210 × 297 mm) or Letter
-- 🖨️ **Colors**: Print in color for best visual experience
-- 📏 **Quality**: High quality for images
-- 🞨️ **Font**: Default fonts work great, no special fonts needed
-- 📋 **Margins**: Keep default or reduce slightly if needed
-- 💭 **Preview**: Always use print preview to check pagination
-
-## Tips for Teachers
-
-### Multiple Versions
+Run:
 ```bash
-# Generate 3 different versions with shuffled match_sentence images
-python3 json_to_paper.py exercises.json version_A.html
-python3 json_to_paper.py exercises.json version_B.html
-python3 json_to_paper.py exercises.json version_C.html
+chmod +x process_all_units.sh
+./process_all_units.sh
 ```
 
-### Removing Answer Key from Student Version
+## Printing Tips
 
-1. Open HTML in text editor
-2. Find `<div class="answers-section">`
-3. Delete from there to the closing `</div>`
-4. Save as `student_version.html`
-5. Print to PDF
+### From HTML (via Browser)
 
-### Creating Answer Key Only
+1. Open `file_paper.html` in browser
+2. **Cmd+P** (Mac) or **Ctrl+P** (Windows/Linux)
+3. Settings:
+   - Destination: "Save as PDF" (or your printer)
+   - Paper size: **A4** (or Letter)
+   - Margins: Default
+   - Background graphics: **ON** (for colors)
+   - Scale: **100%**
+4. Click **Save** or **Print**
 
-1. Open HTML in text editor
-2. Delete everything from `<div class="exercise">` to just before `<div class="answers-section">`
-3. Save and print
+### From DOCX (via Word)
+
+1. Open `file_paper.docx` in Word
+2. **Cmd+P** (Mac) or **Ctrl+P** (Windows)
+3. Choose:
+   - Printer: Your printer (or "Save as PDF")
+   - Paper: **A4**
+   - Orientation: **Portrait**
+   - Margins: **Normal**
+4. Click **Print**
+
+### Best Practices
+
+- ✅ Use A4 or Letter paper size
+- ✅ Print in color for best visual experience
+- ✅ Check print preview before printing
+- ✅ Test on one page first
+- ✅ Use high-quality paper for student worksheets
+
+## JSON Structure Requirements
+
+### Minimal Example
+
+```json
+[
+  {
+    "type": "mcq_single",
+    "question": "What is 2+2?",
+    "options": ["3", "4", "5"],
+    "answer": "4",
+    "media": {
+      "image": "images/math_problem.jpg"
+    }
+  }
+]
+```
+
+### With Full Media
+
+```json
+[
+  {
+    "type": "match_sentence",
+    "question": "Match sentences to images",
+    "pairs": [
+      {
+        "sentence": "The cat is sleeping",
+        "image_path": "images/sleeping_cat.jpg"
+      }
+    ],
+    "answer": {"sentence_1": "image_1"},
+    "media": {
+      "audio": "audios/pronunciation.mp3"
+    }
+  }
+]
+```
+
+## Comparing Outputs
+
+| Aspect | HTML | DOCX |
+|--------|------|------|
+| **Edit Format** | CSS + HTML | Word document |
+| **Ease of Edit** | Intermediate | Easy |
+| **Special Features** | CSS control, browser print | Native Word tools |
+| **Share with Team** | Copy HTML file | Share .docx directly |
+| **Print Quality** | Excellent | Excellent |
+| **Add Images Later** | HTML editing | Drag & drop |
+| **Add Logo** | CSS modification | Insert menu |
+| **Batch Export** | Via print dialog | Word "Save As" |
+
+## File Organization
+
+**Recommended structure:**
+
+```
+WifeyMOOC/
+├── json_to_paper.py
+├── PAPER_PRINTING_GUIDE.md
+├── data/
+│   ├── unit1.json
+│   ├── unit2.json
+│   └── images/
+│       ├── image1.jpg
+│       ├── image2.png
+│       └── ...
+├── worksheets/
+│   ├── unit1_paper.html
+│   ├── unit1_paper.docx
+│   ├── unit2_paper.html
+│   └── unit2_paper.docx
+└── audios/
+    ├── audio1.mp3
+    └── ...
+```
+
+## Troubleshooting
+
+### DOCX won't open
+
+- Install Microsoft Word or LibreOffice
+- Try opening with different app
+- Check file isn't corrupted (regenerate)
+
+### Images blurry in DOCX
+
+- DOCX shrinks images to fit page
+- Open original image in "Insert > Picture" for better quality
+- Or regenerate with original high-res images
+
+### Formatting lost when opening DOCX
+
+- DOCX uses Word's built-in styles
+- Some formatting may vary by Word version
+- Regenerate if needed
+
+### HTML pagination issues
+
+- Open in different browser (Chrome handles CSS printing better)
+- Reduce margins in print dialog
+- Edit CSS in HTML file for fine control
+
+## Examples & Templates
+
+Check the repository for example JSON files and generated worksheets:
+- `examples/mcq_unit.json` → MCQ questions with images
+- `examples/mixed_types.json` → Various question types
+- `examples/matching_unit.json` → Matching exercises
 
 ## Contributing
 
-To add support for new question types:
+To add features or fix issues:
 
-1. Add a new rendering method in the `ExerciseToPaper` class
-2. Add a case in the `_exercise_to_html()` method
-3. Test with your JSON file
-4. Submit improvements!
+1. Test with your JSON files
+2. Submit improvements with examples
+3. Check both HTML and DOCX output
 
 ## License
 
 Same as WifeyMOOC (WTFPL)
 
-## Support
-
-For issues or suggestions, open an issue on the repository! 👋
-
 ---
 
-**Ready to create your worksheets? Print and learn! 📚✏️**
+**Ready to create professional worksheets? Pick your format and start! 📚✏️**
