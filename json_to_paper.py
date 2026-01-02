@@ -816,14 +816,27 @@ class ExerciseToPaper:
                 self._add_checkbox_to_docx(doc, target)
     
     def _render_match_phrases_docx(self, doc: Document, exercise: Dict):
-        """Render match phrases in DOCX"""
+        """Render match phrases in DOCX with all targets visible"""
         doc.add_paragraph("Match the phrases:", style='Heading 4')
         pairs = exercise.get('pairs', [])
-        for pair in pairs:
+        
+        # Show each starting phrase with its available targets
+        for pair_idx, pair in enumerate(pairs, 1):
             source = pair.get('source', '')
+            targets = pair.get('targets', [])
+            
+            # Show the source
             p = doc.add_paragraph()
-            p.add_run(source).bold = True
-            p.add_run("  " + "_" * 20)
+            p.add_run(f"{pair_idx}. {source}").bold = True
+            p.add_run("  " + "_" * 30)
+            
+            # Show available targets for this pair
+            if targets:
+                for target in targets:
+                    if target.strip():  # Skip empty options
+                        self._add_checkbox_to_docx(doc, target)
+            
+            doc.add_paragraph()  # Spacing between pairs
     
     def _render_match_sentence_docx(self, doc: Document, exercise: Dict):
         """Render match sentence in DOCX"""
@@ -1141,12 +1154,24 @@ class ExerciseToPaper:
         return html
     
     def _render_match_phrases(self, exercise: Dict) -> str:
-        """Render match phrases for HTML"""
+        """Render match phrases for HTML with targets visible for each source"""
         html = '<div class="pairs-list">\n'
-        for pair in exercise.get('pairs', []):
+        pairs = exercise.get('pairs', [])
+        
+        for pair_idx, pair in enumerate(pairs, 1):
             source = pair.get('source', '')
-            target = pair.get('target', '')
-            html += f'<div class="pair"><div class="pair-source">{source}</div><div class="pair-target">{target}</div></div>\n'
+            targets = pair.get('targets', [])
+            
+            # Show source with blank
+            html += f'<div class="pair"><div class="pair-source">{pair_idx}. {source}</div><div class="pair-target">___________</div></div>\n'
+            
+            # Show available targets for this pair
+            if targets:
+                for target in targets:
+                    if target.strip():  # Skip empty options
+                        html += f'<div class="option" style="margin-left: 20px;">• {target}</div>\n'
+            html += '\n'
+        
         html += '</div>\n'
         return html
     
