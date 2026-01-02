@@ -744,35 +744,48 @@ class ExerciseToPaper:
         except Exception as e:
             doc.add_paragraph(f"[Could not add image: {image_path}]")
     
+    def _add_checkbox_to_docx(self, para: Document, text: str, checked: bool = False):
+        """Add a checkbox to a paragraph in DOCX"""
+        checkbox_symbol = "☑" if checked else "☐"
+        p = para.add_paragraph(f"{checkbox_symbol} {text}")
+        return p
+    
     def _render_mcq_single_docx(self, doc: Document, exercise: Dict):
-        """Render MCQ single choice in DOCX"""
+        """Render MCQ single choice in DOCX with checkboxes"""
         for option in exercise.get('options', []):
-            p = doc.add_paragraph(option, style='List Bullet')
-            p.paragraph_format.left_indent = Inches(0.3)
+            self._add_checkbox_to_docx(doc, option)
     
     def _render_mcq_multiple_docx(self, doc: Document, exercise: Dict):
-        """Render MCQ multiple choice in DOCX"""
+        """Render MCQ multiple choice in DOCX with checkboxes"""
         for option in exercise.get('options', []):
-            p = doc.add_paragraph(option, style='List Bullet')
-            p.paragraph_format.left_indent = Inches(0.3)
+            self._add_checkbox_to_docx(doc, option)
     
     def _render_list_pick_docx(self, doc: Document, exercise: Dict):
-        """Render list pick in DOCX"""
+        """Render list pick in DOCX with checkboxes"""
         for option in exercise.get('options', []):
-            p = doc.add_paragraph(option, style='List Bullet')
-            p.paragraph_format.left_indent = Inches(0.3)
+            self._add_checkbox_to_docx(doc, option)
     
     def _render_fill_blanks_docx(self, doc: Document, exercise: Dict):
-        """Render fill blanks in DOCX"""
+        """Render fill blanks in DOCX with dropdown options"""
+        # Show the sentence with blanks
         parts = exercise.get('sentence_parts', [])
         p = doc.add_paragraph()
         for part in parts:
             p.add_run(part)
         
-        for idx in range(len(exercise.get('options_for_blanks', []))):
-            blank = doc.add_paragraph()
-            blank.add_run(f"Blank {idx+1}: ").bold = True
-            blank.add_run("_" * 20)
+        # Show available options
+        options = exercise.get('options_for_blanks', [])
+        if options:
+            doc.add_paragraph("Available options:", style='Heading 4')
+            for option in options:
+                if isinstance(option, list):
+                    # If option is a list of choices for that blank
+                    doc.add_paragraph("Blank options:")
+                    for choice in option:
+                        self._add_checkbox_to_docx(doc, choice)
+                    doc.add_paragraph()  # Spacing between blanks
+                else:
+                    self._add_checkbox_to_docx(doc, str(option))
     
     def _render_match_phrases_docx(self, doc: Document, exercise: Dict):
         """Render match phrases in DOCX"""
@@ -1041,99 +1054,99 @@ class ExerciseToPaper:
         return html
     
     def _render_fill_blanks(self, exercise: Dict) -> str:
-        """Render fill blanks for HTML"""
+        """Render fill blanks for HTML with dropdown options displayed"""
         html = '<div class="sentence-parts">\n'
         parts = exercise.get('sentence_parts', [])
+        
+        # Show sentence with blanks
         for part in parts:
-            html += f'{part}'
-        html += '<br>'
-        for idx in range(len(exercise.get('options_for_blanks', []))):
-            html += f'<div><strong>Blank {idx+1}:</strong> <span class="answer-space"></span></div>\n'
+            html += part
+        html += '\n'
+        
+        # Show available options
+        options = exercise.get('options_for_blanks', [])
+        if options:
+            html += '<div class="category-list"><strong>Available options:</strong> '
+            option_list = []
+            for option in options:
+                if isinstance(option, list):
+                    option_list.extend(option)
+                else:
+                    option_list.append(str(option))
+            html += ', '.join(option_list)
+            html += '</div>\n'
+        
         html += '</div>\n'
         return html
     
     def _render_match_phrases(self, exercise: Dict) -> str:
         """Render match phrases for HTML"""
         html = '<div class="pairs-list">\n'
-        html += '<p style="margin-bottom: 10px; color: #7f8c8d; font-style: italic; font-size: 0.9em;">Match the phrases by drawing lines or writing corresponding letters:</p>\n'
-        pairs = exercise.get('pairs', [])
-        for pair in pairs:
+        for pair in exercise.get('pairs', []):
             source = pair.get('source', '')
-            html += f'<div class="pair"><div class="pair-source">{source}</div><div class="pair-target">_____</div></div>\n'
+            target = pair.get('target', '')
+            html += f'<div class="pair"><div class="pair-source">{source}</div><div class="pair-target">{target}</div></div>\n'
         html += '</div>\n'
         return html
     
     def _render_match_sentence(self, exercise: Dict) -> str:
         """Render match sentence for HTML"""
+        html = '<div class="image-grid">\n'
         pairs = exercise.get('pairs', [])
         
-        # Create list of images with original indices
-        images_with_indices = [(idx, pair.get('image_path', '')) for idx, pair in enumerate(pairs)]
-        
         # Shuffle images
-        random_order = list(range(len(pairs)))
-        random.shuffle(random_order)
-        shuffled_images = [images_with_indices[i] for i in random_order]
+        indices = list(range(len(pairs)))
+        random.shuffle(indices)
         
-        html = '<div class="pairs-list">\n'
-        html += '<p style="margin-bottom: 10px; color: #2c3e50; font-weight: bold; font-size: 0.95em;">Images:</p>\n'
-        
-        # Display images in random order with letter labels
-        html += '<div class="image-grid">\n'
-        for label_idx, (orig_idx, image_path) in enumerate(shuffled_images):
+        for label_idx, orig_idx in enumerate(indices):
+            pair = pairs[orig_idx]
+            image_path = pair.get('image_path', '')
             data_uri = self._load_image_as_base64(image_path)
+            
             if data_uri:
-                label = chr(65 + label_idx)  # A, B, C, D, etc.
-                html += f'''<div class="image-item">
-    <img src="{data_uri}" alt="option {label}">
-    <div class="image-label">({label})</div>
-</div>\n'''
+                label = chr(65 + label_idx)
+                html += f'<div class="image-item"><img src="{data_uri}" alt="Option {label}"><div class="image-label">({label})</div></div>\n'
+        
         html += '</div>\n'
         
-        # Display sentences below
-        html += '<p style="margin: 15px 0 8px 0; color: #2c3e50; font-weight: bold; font-size: 0.95em;">Match sentences with images:</p>\n'
+        # Add sentences to match
+        html += '<div class="pairs-list"><strong>Match sentences with images:</strong>\n'
         for idx, pair in enumerate(pairs, 1):
             sentence = pair.get('sentence', '')
-            html += f'<div class="pair"><div class="pair-source" style="flex: 1;">{idx}. {sentence}</div><div class="pair-target" style="flex: 0; margin-left: 10px;">____</div></div>\n'
-        
+            html += f'<div class="pair"><div class="pair-source">{idx}. {sentence}</div><div class="pair-target">___</div></div>\n'
         html += '</div>\n'
+        
         return html
     
     def _render_order_phrase(self, exercise: Dict) -> str:
         """Render order phrase for HTML"""
         html = '<div class="sentence-parts">\n'
-        html += '<p style="margin-bottom: 10px; color: #7f8c8d; font-style: italic; font-size: 0.9em;">Number the sentences in correct order:</p>\n'
-        for idx, phrase in enumerate(exercise.get('phrase_shuffled', []), 1):
-            html += f'<div style="margin: 8px 0;"><span style="border: 1px solid #2c3e50; width: 25px; display: inline-block; text-align: center; font-size: 0.9em;">__</span> {phrase}</div>\n'
+        phrases = exercise.get('phrase_shuffled', [])
+        
+        for idx, phrase in enumerate(phrases, 1):
+            html += f'<div class="option">___ {idx}. {phrase}</div>\n'
+        
         html += '</div>\n'
         return html
     
     def _render_categorization(self, exercise: Dict) -> str:
         """Render categorization for HTML"""
-        html = '<div class="pairs-list">\n'
-        html += '<p style="margin-bottom: 10px; color: #2c3e50; font-weight: bold; font-size: 0.95em;">Categorize each item:</p>\n'
-        stimuli = exercise.get('stimuli', [])
+        html = '<div>\n'
         categories = exercise.get('categories', [])
+        html += f'<div class="category-list"><strong>Categories:</strong> {\", \".join(c for c in categories if c.strip())}</div>\n'
         
-        # Show categories first
-        html += '<div class="category-list"><strong>Categories:</strong> ' + ', '.join([c for c in categories if c.strip()]) + '</div>\n'
-        
-        # Render items in compact format
-        for stimulus in stimuli:
-            text = stimulus.get('text', '')
-            image = stimulus.get('image', '')
-            
+        for stimulus in exercise.get('stimuli', []):
             html += '<div class="categorization-item">\n'
             
-            if text:
-                html += f'<div class="categorization-text">{text}</div>\n'
+            if stimulus.get('text'):
+                html += f'<div class="categorization-text">{stimulus[\"text\"]}</div>\n'
             
-            if image:
-                data_uri = self._load_image_as_base64(image)
+            if stimulus.get('image'):
+                data_uri = self._load_image_as_base64(stimulus['image'])
                 if data_uri:
                     html += f'<img src="{data_uri}" alt="stimulus">\n'
             
-            html += '<div>Category: <span class="categorization-input"></span></div>\n'
+            html += f'<div class="categorization-input">Category: ___________</div>\n'
             html += '</div>\n'
         
         html += '</div>\n'
@@ -1143,49 +1156,54 @@ class ExerciseToPaper:
         """Render word fill for HTML"""
         html = '<div class="sentence-parts">\n'
         parts = exercise.get('sentence_parts', [])
+        
         for part in parts:
-            html += f'{part}'
-        html += '<br>'
+            html += part
+        
+        html += '\n'
         for idx in range(len(exercise.get('answers', []))):
-            html += f'<div><strong>Answer {idx+1}:</strong> <span class="answer-space"></span></div>\n'
+            html += f'<div class="category-list">Blank {idx+1}: ___________</div>\n'
+        
         html += '</div>\n'
         return html
     
     def _render_sequence(self, exercise: Dict) -> str:
         """Render sequence for HTML"""
         html = '<div class="sentence-parts">\n'
-        html += '<p style="margin-bottom: 10px; color: #7f8c8d; font-style: italic; font-size: 0.9em;">Put items in correct order:</p>\n'
-        options = exercise.get('audio_options', [])
-        for idx, option in enumerate(options, 1):
+        
+        for idx, option in enumerate(exercise.get('audio_options', []), 1):
             opt_text = option.get('option', f'Item {idx}') if isinstance(option, dict) else option
-            html += f'<div style="margin: 8px 0;"><span style="border: 1px solid #2c3e50; width: 25px; display: inline-block; text-align: center; font-size: 0.9em;">__</span> {opt_text}</div>\n'
+            html += f'<div class="option">___ {idx}. {opt_text}</div>\n'
+        
         html += '</div>\n'
         return html
     
     def _render_image_tagging(self, exercise: Dict) -> str:
         """Render image tagging for HTML"""
-        html = ''
+        html = '<div>\n'
+        
         media = exercise.get('media', {})
-        image_path = media.get('image', '')
+        if media.get('image'):
+            data_uri = self._load_image_as_base64(media['image'])
+            if data_uri:
+                html += f'<div class="media-image"><img src="{data_uri}" alt="tagging"></div>\n'
         
-        if image_path:
-            html += self._render_inline_image(image_path)
+        html += f'<div class="category-list"><strong>Button:</strong> {exercise.get(\"button_label\", \"N/A\")}</div>\n'
+        html += '<div class="category-list"><strong>Label with:</strong>\n'
         
-        html += f'<div class="sentence-parts">\n'
-        html += f'<p style="margin-bottom: 10px; color: #2c3e50; font-weight: 500;"><strong>Button Label:</strong> {exercise.get("button_label", "N/A")}</p>\n'
-        html += '<p style="margin-bottom: 10px; color: #7f8c8d; font-style: italic; font-size: 0.9em;">Label the diagram with the following terms:</p>\n'
-        tags = exercise.get('tags', [])
-        for idx, tag in enumerate(tags, 1):
-            html += f'<div style="margin: 6px 0; font-size: 0.9em;">• {tag.get("label", "N/A")}</div>\n'
-        html += '</div>\n'
+        for tag in exercise.get('tags', []):
+            html += f'• {tag.get(\"label\", \"N/A\")}<br>\n'
+        
+        html += '</div>\n</div>\n'
         return html
     
     def _render_multi_questions(self, exercise: Dict) -> str:
         """Render multi questions for HTML"""
-        html = '<div style="border: 2px dashed #3498db; padding: 10px; border-radius: 4px; margin: 10px 0;">\n'
-        html += '<p style="margin-bottom: 10px; font-style: italic; color: #7f8c8d; font-size: 0.85em;">Multiple questions in one exercise:</p>\n'
+        html = '<div class="pairs-list">\n'
+        
         for q_idx, question in enumerate(exercise.get('questions', []), 1):
-            html += f'<div style="margin: 10px 0; padding: 8px; background: white; border-radius: 3px; font-size: 0.9em;"><strong>Question {q_idx}:</strong> {question.get("question", "N/A")}</div>\n'
+            html += f'<div class="pair"><div class="pair-source">Q{q_idx}: {question.get(\"question\", \"N/A\")}</div><div class="pair-target">_________</div></div>\n'
+        
         html += '</div>\n'
         return html
 
