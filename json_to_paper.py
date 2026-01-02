@@ -773,18 +773,19 @@ class ExerciseToPaper:
         """Render fill blanks in DOCX with dropdown options"""
         # Show the sentence with blanks
         parts = exercise.get('sentence_parts', [])
+        
+        # Show sentence text with blanks formatted clearly
         p = doc.add_paragraph()
         for part in parts:
             p.add_run(part)
         
-        # Show available options
+        # Show available options with proper spacing
         options = exercise.get('options_for_blanks', [])
         if options:
-            doc.add_paragraph("Available options:", style='Heading 4')
+            doc.add_paragraph("Available options:")
             for option in options:
                 if isinstance(option, list):
                     # If option is a list of choices for that blank
-                    doc.add_paragraph("Blank options:")
                     for choice in option:
                         self._add_checkbox_to_docx(doc, choice)
                     doc.add_paragraph()  # Spacing between blanks
@@ -816,8 +817,8 @@ class ExerciseToPaper:
                 self._add_checkbox_to_docx(doc, target)
     
     def _render_match_phrases_docx(self, doc: Document, exercise: Dict):
-        """Render match phrases in DOCX with all targets visible"""
-        doc.add_paragraph("Match the phrases:", style='Heading 4')
+        """Render match phrases in DOCX with all targets visible for each source"""
+        doc.add_paragraph("Associez les débuts et fins de phrases :")
         pairs = exercise.get('pairs', [])
         
         # Show each starting phrase with its available targets
@@ -825,12 +826,12 @@ class ExerciseToPaper:
             source = pair.get('source', '')
             targets = pair.get('targets', [])
             
-            # Show the source
+            # Show the source with blank line for answer
             p = doc.add_paragraph()
             p.add_run(f"{pair_idx}. {source}").bold = True
             p.add_run("  " + "_" * 30)
             
-            # Show available targets for this pair
+            # Show available targets for this pair as checkboxes
             if targets:
                 for target in targets:
                     if target.strip():  # Skip empty options
@@ -839,27 +840,31 @@ class ExerciseToPaper:
             doc.add_paragraph()  # Spacing between pairs
     
     def _render_match_sentence_docx(self, doc: Document, exercise: Dict):
-        """Render match sentence in DOCX"""
+        """Render match sentence in DOCX with images displayed individually"""
         pairs = exercise.get('pairs', [])
         
-        # Shuffle and display images
+        # Display images individually on separate lines
+        doc.add_paragraph("Images:")
         images_with_indices = [(idx, pair.get('image_path', '')) for idx, pair in enumerate(pairs)]
         random_order = list(range(len(pairs)))
         random.shuffle(random_order)
         shuffled_images = [images_with_indices[i] for i in random_order]
         
-        doc.add_paragraph("Images:", style='Heading 4')
         for label_idx, (orig_idx, image_path) in enumerate(shuffled_images):
             full_path = self._get_image_path(image_path)
             if full_path:
                 label = chr(65 + label_idx)
-                p = doc.add_paragraph(f"({label}) ", style='Normal')
+                # Add label
+                label_para = doc.add_paragraph(f"({label})")
+                # Add image
                 try:
                     doc.add_picture(str(full_path), width=Inches(2.0))
                 except:
-                    pass
+                    doc.add_paragraph(f"[Image not found: {image_path}]")
+                doc.add_paragraph()  # Spacing between images
         
-        doc.add_paragraph("Match sentences with images:", style='Heading 4')
+        # Add matching section
+        doc.add_paragraph("Match sentences with images:")
         for idx, pair in enumerate(pairs, 1):
             sentence = pair.get('sentence', '')
             p = doc.add_paragraph()
@@ -909,6 +914,8 @@ class ExerciseToPaper:
         p = doc.add_paragraph()
         for part in parts:
             p.add_run(part)
+        
+        doc.add_paragraph()  # Spacing
         
         for idx in range(len(exercise.get('answers', []))):
             blank = doc.add_paragraph()
