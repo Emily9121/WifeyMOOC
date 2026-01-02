@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 WifeyMOOC JSON to Paper Exercise Printer
-Converts exercise JSON files into printable PDF (A4) format
+Converts exercise JSON files into printable HTML format (print to PDF manually)
 """
 
 import json
@@ -12,13 +12,6 @@ import random
 from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Any, Tuple
-
-try:
-    from weasyprint import HTML, CSS
-    HAS_WEASYPRINT = True
-except ImportError:
-    HAS_WEASYPRINT = False
-    print("⚠️  Warning: weasyprint not installed. Install with: pip install weasyprint")
 
 class ExerciseToPaper:
     def __init__(self, json_file: str):
@@ -74,52 +67,11 @@ class ExerciseToPaper:
             print(f"⚠️  Warning: Could not load image {image_path} - {e}")
             return None
     
-    def generate_pdf(self, output_file: str = None) -> str:
-        """Generate PDF document for printing (A4 size)"""
+    def generate_html(self, output_file: str = None) -> str:
+        """Generate HTML document for printing"""
         if output_file is None:
-            output_file = Path(self.json_file).stem + "_paper.pdf"
+            output_file = Path(self.json_file).stem + "_paper.html"
         
-        # First generate HTML content
-        html_content = self._generate_html_content()
-        
-        # Convert to PDF
-        if not HAS_WEASYPRINT:
-            print("\n✗ Error: weasyprint is required for PDF generation")
-            print("Install it with: pip install weasyprint")
-            print("\nAlternatively, you can:")
-            print(f"1. Save the HTML to a file")
-            print(f"2. Open it in your browser")
-            print(f"3. Print to PDF (Ctrl+P or Cmd+P) and save as {output_file}")
-            sys.exit(1)
-        
-        try:
-            # Create HTML object
-            html_doc = HTML(string=html_content, base_url=str(self.base_dir))
-            
-            # Define A4 page size CSS
-            css = CSS(string="""
-                @page {
-                    size: A4;
-                    margin: 1cm;
-                }
-            """)
-            
-            # Write to PDF
-            html_doc.write_pdf(output_file, stylesheets=[css])
-            print(f"✓ PDF worksheet saved to: {output_file}")
-            return output_file
-        except Exception as e:
-            print(f"✗ Error generating PDF: {e}")
-            print(f"\nTrying HTML fallback...")
-            html_file = Path(output_file).stem + ".html"
-            with open(html_file, 'w', encoding='utf-8') as f:
-                f.write(html_content)
-            print(f"✓ HTML saved to: {html_file}")
-            print(f"  Open in browser and print to PDF manually")
-            return html_file
-    
-    def _generate_html_content(self) -> str:
-        """Generate HTML content for the worksheet"""
         html_content = """<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -142,49 +94,50 @@ class ExerciseToPaper:
             line-height: 1.5;
             color: #333;
             background: white;
+            padding: 20px;
         }
         
         .container {
-            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
             background: white;
-            padding: 0;
-            margin: 0;
         }
         
         .header {
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
             border-bottom: 3px solid #2c3e50;
             padding-bottom: 15px;
+            break-after: avoid;
         }
         
         .header h1 {
             color: #2c3e50;
             margin-bottom: 5px;
-            font-size: 1.8em;
+            font-size: 2em;
         }
         
         .header p {
             color: #7f8c8d;
-            font-size: 0.85em;
+            font-size: 0.9em;
         }
         
         .exercise {
-            margin-bottom: 30px;
+            margin-bottom: 25px;
             border-left: 4px solid #3498db;
             padding-left: 15px;
-            page-break-inside: avoid;
+            break-inside: avoid;
         }
         
         .exercise-number {
             display: inline-block;
             background: #3498db;
             color: white;
-            padding: 3px 10px;
+            padding: 4px 10px;
             border-radius: 15px;
             font-weight: bold;
             margin-bottom: 8px;
-            font-size: 0.8em;
+            font-size: 0.85em;
         }
         
         .exercise-type {
@@ -199,8 +152,8 @@ class ExerciseToPaper:
         }
         
         .question {
-            font-size: 1em;
-            margin: 10px 0;
+            font-size: 1.05em;
+            margin: 12px 0;
             font-weight: 500;
             color: #2c3e50;
         }
@@ -215,12 +168,13 @@ class ExerciseToPaper:
         }
         
         .media-image {
-            margin: 10px 0;
+            margin: 12px 0;
             text-align: center;
             border: 1px solid #dee2e6;
-            padding: 8px;
+            padding: 10px;
             border-radius: 4px;
             background: #f8f9fa;
+            break-inside: avoid;
         }
         
         .media-image img {
@@ -228,46 +182,47 @@ class ExerciseToPaper:
             height: auto;
             border-radius: 4px;
             display: inline-block;
-            max-height: 200px;
+            max-height: 250px;
         }
         
         .media-image-caption {
-            font-size: 0.75em;
+            font-size: 0.8em;
             color: #7f8c8d;
-            margin-top: 5px;
+            margin-top: 6px;
             font-style: italic;
         }
         
         .image-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
             gap: 12px;
             margin: 12px 0;
             padding: 12px;
             background: #f8f9fa;
             border-radius: 4px;
+            break-inside: avoid;
         }
         
         .image-item {
             border: 1px solid #dee2e6;
-            padding: 8px;
+            padding: 10px;
             border-radius: 4px;
             text-align: center;
             background: white;
-            page-break-inside: avoid;
+            break-inside: avoid;
         }
         
         .image-item img {
             max-width: 100%;
             height: auto;
             max-height: 120px;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
         }
         
         .image-label {
             font-weight: bold;
             color: #2c3e50;
-            font-size: 0.85em;
+            font-size: 0.9em;
         }
         
         .option-list {
@@ -276,12 +231,12 @@ class ExerciseToPaper:
         }
         
         .option {
-            margin: 7px 0;
-            padding: 6px;
+            margin: 8px 0;
+            padding: 8px;
             background: #f8f9fa;
             border-radius: 3px;
             border-left: 2px solid #dee2e6;
-            font-size: 0.9em;
+            font-size: 0.95em;
         }
         
         .option input[type="checkbox"],
@@ -301,8 +256,9 @@ class ExerciseToPaper:
             padding: 12px;
             border-radius: 4px;
             margin: 10px 0;
-            line-height: 1.7;
-            font-size: 0.9em;
+            line-height: 1.8;
+            font-size: 0.95em;
+            break-inside: avoid;
         }
         
         .answer-space {
@@ -318,6 +274,7 @@ class ExerciseToPaper:
             padding: 12px;
             background: #f8f9fa;
             border-radius: 4px;
+            break-inside: avoid;
         }
         
         .pair {
@@ -330,8 +287,7 @@ class ExerciseToPaper:
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
-            font-size: 0.9em;
-            page-break-inside: avoid;
+            font-size: 0.95em;
         }
         
         .pair-source {
@@ -346,53 +302,93 @@ class ExerciseToPaper:
             flex: 0 1 35%;
             text-align: right;
             margin-left: 10px;
+            font-size: 0.9em;
+        }
+        
+        .categorization-item {
+            margin: 12px 0;
+            padding: 12px;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            break-inside: avoid;
+        }
+        
+        .categorization-item img {
+            max-width: 100%;
+            max-height: 150px;
+            margin: 10px 0;
+            border-radius: 3px;
+        }
+        
+        .categorization-text {
+            font-size: 0.95em;
+            margin-bottom: 8px;
+            color: #2c3e50;
+        }
+        
+        .categorization-input {
+            border-bottom: 1.5px solid #2c3e50;
+            display: inline-block;
+            min-width: 100px;
+            margin-top: 8px;
+            height: 18px;
+        }
+        
+        .category-list {
+            margin-top: 10px;
+            padding: 8px 12px;
+            background: #ecf0f1;
+            border-radius: 3px;
             font-size: 0.85em;
+            color: #7f8c8d;
+            break-inside: avoid;
         }
         
         .answers-section {
-            margin-top: 40px;
+            margin-top: 50px;
             padding-top: 20px;
-            border-top: 2px dashed #95a5a6;
-            page-break-before: always;
+            border-top: 3px dashed #95a5a6;
+            break-before: page;
         }
         
         .answers-header {
             background: #e74c3c;
             color: white;
-            padding: 10px;
-            border-radius: 3px;
+            padding: 12px;
+            border-radius: 4px;
             font-weight: bold;
-            margin-bottom: 15px;
-            font-size: 1em;
+            margin-bottom: 20px;
+            font-size: 1.1em;
         }
         
         .answer-item {
-            margin-bottom: 12px;
-            padding: 10px;
+            margin-bottom: 15px;
+            padding: 12px;
             background: #f8f9fa;
-            border-left: 3px solid #27ae60;
+            border-left: 4px solid #27ae60;
             border-radius: 3px;
-            font-size: 0.9em;
+            break-inside: avoid;
         }
         
         .answer-number {
             font-weight: bold;
             color: #27ae60;
-            margin-bottom: 3px;
-            font-size: 0.85em;
+            margin-bottom: 4px;
+            font-size: 0.9em;
         }
         
         .answer-text {
             color: #2c3e50;
-            font-size: 0.85em;
+            font-size: 0.9em;
             word-break: break-word;
         }
         
         .footer {
             text-align: center;
             color: #95a5a6;
-            font-size: 0.75em;
-            margin-top: 30px;
+            font-size: 0.8em;
+            margin-top: 40px;
             padding-top: 15px;
             border-top: 1px solid #ecf0f1;
         }
@@ -403,12 +399,11 @@ class ExerciseToPaper:
                 padding: 0;
             }
             .container {
-                box-shadow: none;
-                width: 100%;
-                padding: 0;
+                max-width: 100%;
+                margin: 0;
             }
             .exercise {
-                page-break-inside: avoid;
+                break-inside: avoid;
             }
         }
     </style>
@@ -438,7 +433,13 @@ class ExerciseToPaper:
 </html>"""
         
         html_content = html_content.replace("{date}", datetime.now().strftime("%B %d, %Y"))
-        return html_content
+        
+        # Save to file
+        with open(output_file, 'w', encoding='utf-8') as f:
+            f.write(html_content)
+        
+        print(f"✓ HTML worksheet saved to: {output_file}")
+        return output_file
     
     def _exercise_to_html(self, exercise: Dict[str, Any], number: int) -> str:
         """Convert individual exercise to HTML"""
@@ -546,7 +547,7 @@ class ExerciseToPaper:
     def _render_match_phrases(self, exercise: Dict) -> str:
         """Render match phrases"""
         html = '<div class="pairs-list">\n'
-        html += '<p style="margin-bottom: 10px; color: #7f8c8d; font-style: italic; font-size: 0.85em;">Match the phrases by drawing lines or writing corresponding letters:</p>\n'
+        html += '<p style="margin-bottom: 10px; color: #7f8c8d; font-style: italic; font-size: 0.9em;">Match the phrases by drawing lines or writing corresponding letters:</p>\n'
         pairs = exercise.get('pairs', [])
         for pair in pairs:
             source = pair.get('source', '')
@@ -570,7 +571,7 @@ class ExerciseToPaper:
         index_to_label = {orig_idx: chr(65 + label_idx) for label_idx, (orig_idx, _) in enumerate(shuffled_images)}
         
         html = '<div class="pairs-list">\n'
-        html += '<p style="margin-bottom: 10px; color: #2c3e50; font-weight: bold; font-size: 0.9em;">Images:</p>\n'
+        html += '<p style="margin-bottom: 10px; color: #2c3e50; font-weight: bold; font-size: 0.95em;">Images:</p>\n'
         
         # Display images in random order with letter labels
         html += '<div class="image-grid">\n'
@@ -585,7 +586,7 @@ class ExerciseToPaper:
         html += '</div>\n'
         
         # Display sentences below
-        html += '<p style="margin: 15px 0 8px 0; color: #2c3e50; font-weight: bold; font-size: 0.9em;">Match sentences with images:</p>\n'
+        html += '<p style="margin: 15px 0 8px 0; color: #2c3e50; font-weight: bold; font-size: 0.95em;">Match sentences with images:</p>\n'
         for idx, pair in enumerate(pairs, 1):
             sentence = pair.get('sentence', '')
             html += f'<div class="pair"><div class="pair-source" style="flex: 1;">{idx}. {sentence}</div><div class="pair-target" style="flex: 0; margin-left: 10px;">____</div></div>\n'
@@ -596,37 +597,40 @@ class ExerciseToPaper:
     def _render_order_phrase(self, exercise: Dict) -> str:
         """Render order phrase"""
         html = '<div class="sentence-parts">\n'
-        html += '<p style="margin-bottom: 10px; color: #7f8c8d; font-style: italic; font-size: 0.85em;">Number the sentences in correct order:</p>\n'
+        html += '<p style="margin-bottom: 10px; color: #7f8c8d; font-style: italic; font-size: 0.9em;">Number the sentences in correct order:</p>\n'
         for idx, phrase in enumerate(exercise.get('phrase_shuffled', []), 1):
             html += f'<div style="margin: 8px 0;"><span style="border: 1px solid #2c3e50; width: 25px; display: inline-block; text-align: center; font-size: 0.9em;">__</span> {phrase}</div>\n'
         html += '</div>\n'
         return html
     
     def _render_categorization(self, exercise: Dict) -> str:
-        """Render categorization"""
+        """Render categorization - compact layout to avoid page breaks"""
         html = '<div class="pairs-list">\n'
-        html += '<p style="margin-bottom: 10px; color: #7f8c8d; font-style: italic; font-size: 0.85em;">Categorize each item:</p>\n'
+        html += '<p style="margin-bottom: 10px; color: #2c3e50; font-weight: bold; font-size: 0.95em;">Categorize each item:</p>\n'
         stimuli = exercise.get('stimuli', [])
         categories = exercise.get('categories', [])
         
+        # Show categories first
+        html += '<div class="category-list"><strong>Categories:</strong> ' + ', '.join([c for c in categories if c.strip()]) + '</div>\n'
+        
+        # Render items in compact format
         for stimulus in stimuli:
             text = stimulus.get('text', '')
             image = stimulus.get('image', '')
             
-            html += '<div class="pair" style="flex-direction: column; align-items: flex-start;">\n'
+            html += '<div class="categorization-item">\n'
             
             if text:
-                html += f'<div class="pair-source" style="width: 100%; margin-bottom: 8px;">{text}</div>\n'
+                html += f'<div class="categorization-text">{text}</div>\n'
             
             if image:
                 data_uri = self._load_image_as_base64(image)
                 if data_uri:
-                    html += f'<img src="{data_uri}" alt="stimulus" style="max-width: 100%; max-height: 100px; margin-bottom: 8px; border-radius: 3px;">\n'
+                    html += f'<img src="{data_uri}" alt="stimulus">\n'
             
-            html += '<div class="pair-target" style="width: 100%; text-align: left; margin-top: 5px;">Category: _____</div>\n'
+            html += '<div>Category: <span class="categorization-input"></span></div>\n'
             html += '</div>\n'
         
-        html += '<p style="margin-top: 12px; font-size: 0.8em; color: #7f8c8d;"><strong>Categories:</strong> ' + ', '.join([c for c in categories if c.strip()]) + '</p>\n'
         html += '</div>\n'
         return html
     
@@ -645,7 +649,7 @@ class ExerciseToPaper:
     def _render_sequence(self, exercise: Dict) -> str:
         """Render sequence/ordering"""
         html = '<div class="sentence-parts">\n'
-        html += '<p style="margin-bottom: 10px; color: #7f8c8d; font-style: italic; font-size: 0.85em;">Put items in correct order:</p>\n'
+        html += '<p style="margin-bottom: 10px; color: #7f8c8d; font-style: italic; font-size: 0.9em;">Put items in correct order:</p>\n'
         options = exercise.get('audio_options', [])
         for idx, option in enumerate(options, 1):
             opt_text = option.get('option', f'Item {idx}') if isinstance(option, dict) else option
@@ -664,7 +668,7 @@ class ExerciseToPaper:
         
         html += f'<div class="sentence-parts">\n'
         html += f'<p style="margin-bottom: 10px; color: #2c3e50; font-weight: 500;"><strong>Button Label:</strong> {exercise.get("button_label", "N/A")}</p>\n'
-        html += '<p style="margin-bottom: 10px; color: #7f8c8d; font-style: italic; font-size: 0.85em;">Label the diagram with the following terms:</p>\n'
+        html += '<p style="margin-bottom: 10px; color: #7f8c8d; font-style: italic; font-size: 0.9em;">Label the diagram with the following terms:</p>\n'
         tags = exercise.get('tags', [])
         for idx, tag in enumerate(tags, 1):
             html += f'<div style="margin: 6px 0; font-size: 0.9em;">• {tag.get("label", "N/A")}</div>\n'
@@ -710,21 +714,22 @@ class ExerciseToPaper:
 def main():
     """Main function"""
     if len(sys.argv) < 2:
-        print("Usage: python json_to_paper.py <json_file> [output_file.pdf]")
+        print("Usage: python json_to_paper.py <json_file> [output_file.html]")
         print("\nExample:")
         print("  python json_to_paper.py testfile-complete.json")
-        print("  python json_to_paper.py testfile-complete.json my_worksheet.pdf")
-        print("\nTo use PDF output, install weasyprint:")
-        print("  pip install weasyprint")
+        print("  python json_to_paper.py testfile-complete.json my_worksheet.html")
+        print("\nThen open in browser and print to PDF (Ctrl+P or Cmd+P)")
         sys.exit(1)
     
     json_file = sys.argv[1]
     output_file = sys.argv[2] if len(sys.argv) > 2 else None
     
     converter = ExerciseToPaper(json_file)
-    output = converter.generate_pdf(output_file)
+    output = converter.generate_html(output_file)
     
-    print(f"\n✨ Worksheet ready! File: {output}")
+    print(f"\n✨ Worksheet ready!")
+    print(f"📄 Open '{output}' in your browser")
+    print(f"🖨️  Print to PDF: Ctrl+P (or Cmd+P on Mac) → Save as PDF")
 
 
 if __name__ == "__main__":
