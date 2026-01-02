@@ -630,6 +630,8 @@ class ExerciseToPaper:
             html += self._render_list_pick(exercise)
         elif ex_type == 'fill_blanks_dropdown':
             html += self._render_fill_blanks(exercise)
+        elif ex_type == 'match_phrase':
+            html += self._render_match_phrase(exercise)
         elif ex_type == 'match_phrases':
             html += self._render_match_phrases(exercise)
         elif ex_type == 'match_sentence':
@@ -706,6 +708,8 @@ class ExerciseToPaper:
             self._render_list_pick_docx(doc, exercise)
         elif ex_type == 'fill_blanks_dropdown':
             self._render_fill_blanks_docx(doc, exercise)
+        elif ex_type == 'match_phrase':
+            self._render_match_phrase_docx(doc, exercise)
         elif ex_type == 'match_phrases':
             self._render_match_phrases_docx(doc, exercise)
         elif ex_type == 'match_sentence':
@@ -786,6 +790,30 @@ class ExerciseToPaper:
                     doc.add_paragraph()  # Spacing between blanks
                 else:
                     self._add_checkbox_to_docx(doc, str(option))
+    
+    def _render_match_phrase_docx(self, doc: Document, exercise: Dict):
+        """Render match phrase (singular) in DOCX - student sees starting phrases and matching options"""
+        doc.add_paragraph("Match the phrases:", style='Heading 4')
+        pairs = exercise.get('pairs', [])
+        
+        # Show starting phrases
+        doc.add_paragraph("Complete the following phrases:", style='Normal')
+        for pair in pairs:
+            source = pair.get('source', '')
+            p = doc.add_paragraph()
+            p.add_run(source).bold = True
+            p.add_run("  " + "_" * 30)
+        
+        # Show available endings
+        doc.add_paragraph("\nAvailable endings:", style='Normal')
+        all_targets = []
+        for pair in pairs:
+            targets = pair.get('targets', [])
+            all_targets.extend(targets)
+        
+        for target in all_targets:
+            if target.strip():  # Skip empty options
+                self._add_checkbox_to_docx(doc, target)
     
     def _render_match_phrases_docx(self, doc: Document, exercise: Dict):
         """Render match phrases in DOCX"""
@@ -1083,6 +1111,31 @@ class ExerciseToPaper:
                     option_list.append(str(option))
             html += ', '.join(option_list)
             html += '</div>\n'
+        
+        html += '</div>\n'
+        return html
+    
+    def _render_match_phrase(self, exercise: Dict) -> str:
+        """Render match phrase (singular) for HTML - student sees starting phrases and matching options"""
+        html = '<div class="pairs-list">\n'
+        html += '<strong>Complete the following phrases:</strong>\n'
+        pairs = exercise.get('pairs', [])
+        
+        # Show starting phrases
+        for pair in pairs:
+            source = pair.get('source', '')
+            html += f'<div class="pair"><div class="pair-source">{source}</div><div class="pair-target">___________</div></div>\n'
+        
+        # Show available endings
+        html += '<br><strong>Available endings:</strong>\n'
+        all_targets = []
+        for pair in pairs:
+            targets = pair.get('targets', [])
+            all_targets.extend(targets)
+        
+        for target in all_targets:
+            if target.strip():  # Skip empty options
+                html += f'<div class="option">• {target}</div>\n'
         
         html += '</div>\n'
         return html
