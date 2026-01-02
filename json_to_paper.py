@@ -7,6 +7,7 @@ Converts exercise JSON files into printable formats (HTML/PDF)
 import json
 import os
 import sys
+import base64
 from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Any
@@ -15,6 +16,7 @@ class ExerciseToPaper:
     def __init__(self, json_file: str):
         self.json_file = json_file
         self.exercises = []
+        self.base_dir = Path(json_file).parent
         self.load_json()
         
     def load_json(self):
@@ -29,6 +31,40 @@ class ExerciseToPaper:
         except json.JSONDecodeError as e:
             print(f"✗ Error: Invalid JSON - {e}")
             sys.exit(1)
+    
+    def _load_image_as_base64(self, image_path: str) -> str:
+        """Load an image file and convert to base64 data URI"""
+        try:
+            # Try to find the image relative to the JSON file's directory
+            full_path = self.base_dir / image_path
+            if not full_path.exists():
+                # Try relative to current directory
+                full_path = Path(image_path)
+            
+            if not full_path.exists():
+                print(f"⚠️  Warning: Image not found - {image_path}")
+                return None
+            
+            # Determine MIME type
+            suffix = full_path.suffix.lower()
+            mime_types = {
+                '.jpg': 'image/jpeg',
+                '.jpeg': 'image/jpeg',
+                '.png': 'image/png',
+                '.gif': 'image/gif',
+                '.webp': 'image/webp',
+                '.svg': 'image/svg+xml'
+            }
+            mime_type = mime_types.get(suffix, 'image/jpeg')
+            
+            # Read and encode image
+            with open(full_path, 'rb') as f:
+                image_data = base64.b64encode(f.read()).decode('utf-8')
+            
+            return f"data:{mime_type};base64,{image_data}"
+        except Exception as e:
+            print(f"⚠️  Warning: Could not load image {image_path} - {e}")
+            return None
     
     def generate_html(self, output_file: str = None) -> str:
         """Generate HTML document for printing"""
@@ -127,6 +163,29 @@ class ExerciseToPaper:
             color: #856404;
         }
         
+        .media-image {
+            margin: 15px 0;
+            text-align: center;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            border-radius: 4px;
+            background: #f8f9fa;
+        }
+        
+        .media-image img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        
+        .media-image-caption {
+            font-size: 0.85em;
+            color: #7f8c8d;
+            margin-top: 8px;
+            font-style: italic;
+        }
+        
         .option-list {
             margin: 15px 0;
             padding-left: 20px;
@@ -191,18 +250,29 @@ class ExerciseToPaper:
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
         }
         
         .pair-source {
             font-weight: 500;
             color: #2c3e50;
             flex: 1;
+            min-width: 200px;
         }
         
         .pair-target {
             color: #7f8c8d;
             flex: 0 1 40%;
             text-align: right;
+            margin-left: 10px;
+        }
+        
+        .pair-image {
+            width: 100px;
+            height: 100px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
         }
         
         .draggable-hint {
@@ -326,7 +396,8 @@ class ExerciseToPaper:
                 if 'audio' in media:
                     html += f'<div class="media-note">🔊 Audio: {media["audio"]}</div>\n'
                 if 'image' in media:
-                    html += f'<div class="media-note">🖼️ Image: {media["image"]}</div>\n'
+                    # Embed image inline
+                    html += self._render_inline_image(media['image'])
         
         # Type-specific rendering
         if ex_type == 'mcq_single':
@@ -358,6 +429,19 @@ class ExerciseToPaper:
         
         html += '</div>\n'
         return html
+    
+    def _render_inline_image(self, image_path: str) -> str:
+        """Render an image inline with base64 encoding"""
+        data_uri = self._load_image_as_base64(image_path)
+        if data_uri:
+            filename = Path(image_path).name
+            return f'''<div class="media-image">
+    <img src="{data_uri}" alt="{filename}">
+    <div class="media-image-caption">{filename}</div>
+</div>\n'''
+        else:
+            # Fallback to text if image can't be loaded
+            return f'<div class="media-note">🖼️ Image: {image_path}</div>\n'
     
     def _render_mcq_single(self, exercise: Dict) -> str:
         """Render MCQ single choice"""
@@ -407,14 +491,25 @@ class ExerciseToPaper:
         return html
     
     def _render_match_sentence(self, exercise: Dict) -> str:
-        """Render match sentence"""
+        """Render match sentence with images"""
         html = '<div class="pairs-list">\n'
         html += '<p style="margin-bottom: 15px; color: #7f8c8d; font-style: italic;">Match sentences with images:</p>\n'
         pairs = exercise.get('pairs', [])
         for idx, pair in enumerate(pairs, 1):
             sentence = pair.get('sentence', '')
-            image = pair.get('image_path', '')
-            html += f'<div class="pair"><div class="pair-source">{idx}. {sentence}</div><div class="pair-target">[{image.split("/")[-1]}]</div></div>\n'
+            image_path = pair.get('image_path', '')
+            
+            html += f'<div class="pair">\n'
+            html += f'<div class="pair-source"><strong>{idx}. {sentence}</strong></div>\n'
+            
+            # Render inline image
+            if image_path:
+                data_uri = self._load_image_as_base64(image_path)
+                if data_uri:
+                    html += f'<img src="{data_uri}" alt="option {idx}" class="pair-image">\n'
+            
+            html += '</div>\n'
+        
         html += '</div>\n'
         return html
     
@@ -428,16 +523,31 @@ class ExerciseToPaper:
         return html
     
     def _render_categorization(self, exercise: Dict) -> str:
-        """Render categorization"""
+        """Render categorization with images if available"""
         html = '<div class="pairs-list">\n'
         html += '<p style="margin-bottom: 15px; color: #7f8c8d; font-style: italic;">Categorize each item:</p>\n'
         stimuli = exercise.get('stimuli', [])
         categories = exercise.get('categories', [])
+        
         for stimulus in stimuli:
             text = stimulus.get('text', '')
             image = stimulus.get('image', '')
-            label = f'{text}' if text else f'[Image]'
-            html += f'<div class="pair"><div class="pair-source">{label}</div><div class="pair-target">_____</div></div>\n'
+            
+            html += '<div class="pair" style="flex-direction: column; align-items: flex-start;">\n'
+            
+            # Render text
+            if text:
+                html += f'<div class="pair-source" style="width: 100%; margin-bottom: 10px;">{text}</div>\n'
+            
+            # Render image if available
+            if image:
+                data_uri = self._load_image_as_base64(image)
+                if data_uri:
+                    html += f'<img src="{data_uri}" alt="stimulus" class="pair-image" style="margin-bottom: 10px;">\n'
+            
+            html += '<div class="pair-target" style="width: 100%; text-align: left;">Category: _____</div>\n'
+            html += '</div>\n'
+        
         html += '<p style="margin-top: 15px; font-size: 0.9em; color: #7f8c8d;"><strong>Categories:</strong> ' + ', '.join([c for c in categories if c.strip()]) + '</p>\n'
         html += '</div>\n'
         return html
@@ -466,12 +576,16 @@ class ExerciseToPaper:
         return html
     
     def _render_image_tagging(self, exercise: Dict) -> str:
-        """Render image tagging"""
-        html = '<div class="media-note">\n'
-        html += f'🖼️ Image: {exercise.get("media", {}).get("image", "N/A")}<br>\n'
-        html += f'<strong>Button Label:</strong> {exercise.get("button_label", "N/A")}\n'
-        html += '</div>\n'
-        html += '<div class="sentence-parts">\n'
+        """Render image tagging with inline image"""
+        html = ''
+        media = exercise.get('media', {})
+        image_path = media.get('image', '')
+        
+        if image_path:
+            html += self._render_inline_image(image_path)
+        
+        html += f'<div class="sentence-parts">\n'
+        html += f'<p style="margin-bottom: 15px; color: #7f8c8d; font-style: italic;"><strong>Button Label:</strong> {exercise.get("button_label", "N/A")}</p>\n'
         html += '<p style="margin-bottom: 15px; color: #7f8c8d; font-style: italic;">Label the diagram with the following terms:</p>\n'
         tags = exercise.get('tags', [])
         for idx, tag in enumerate(tags, 1):
